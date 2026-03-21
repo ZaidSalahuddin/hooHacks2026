@@ -5,6 +5,7 @@ import BreakdownChart from "../components/BreakdownChart";
 import IngredientList from "../components/IngredientList";
 import BrandProfile from "../components/BrandProfile";
 import AlternativesList from "../components/AlternativesList";
+import NutritionFacts from "../components/NutritionFacts";
 
 export default function ScannerPage() {
   const fileInputRef = useRef(null);
@@ -114,8 +115,15 @@ export default function ScannerPage() {
 
             {/* Breakdown */}
             <div className="p-5 rounded-2xl bg-white shadow-sm">
-              <BreakdownChart breakdown={result.breakdown} />
+              <BreakdownChart breakdown={result.breakdown} reasons={result.breakdownReasons} />
             </div>
+
+            {/* Nutrition Facts */}
+            {result.nutritionFacts && (
+              <div className="p-5 rounded-2xl bg-white shadow-sm">
+                <NutritionFacts nutrition={result.nutritionFacts} />
+              </div>
+            )}
 
             {/* Ingredients */}
             <div className="p-5 rounded-2xl bg-white shadow-sm">
@@ -225,7 +233,6 @@ export default function ScannerPage() {
         className="hidden"
         onChange={handleFileSelect}
       />
-
     </div>
   );
 }

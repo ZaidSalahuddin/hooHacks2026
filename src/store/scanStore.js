@@ -1,11 +1,12 @@
 import { create } from "zustand";
+import { buildBreakdownReasons } from "../lib/score";
 import { saveScan, getScan } from "../lib/history";
 
 export const useScanStore = create((set) => ({
   status: "idle", // idle | scanning | analyzing | done | error
   error: null,
   imageData: null,
-  scanResults: [], // array of { product, brandProfile, ingredientResults, alternatives, breakdown, score }
+  scanResults: [], // array of { product, brandProfile, ingredientResults, alternatives, breakdown, breakdownReasons, score, nutritionFacts }
 
   reset: () =>
     set({ status: "idle", error: null, imageData: null, scanResults: [] }),
@@ -13,6 +14,9 @@ export const useScanStore = create((set) => ({
   loadFromHistory: (id) => {
     const scan = getScan(id);
     if (!scan) return;
+    const ingredientResults = scan.ingredientResults || [];
+    const brandProfile = scan.brandProfile || null;
+    const breakdown = scan.breakdown;
     set({
       status: "done",
       error: null,
@@ -20,11 +24,15 @@ export const useScanStore = create((set) => ({
       scanResults: [
         {
           product: { product_name: scan.product_name, brand: scan.brand, ingredients: [] },
-          ingredientResults: scan.ingredientResults || [],
-          brandProfile: scan.brandProfile || null,
+          ingredientResults,
+          brandProfile,
           score: scan.score,
-          breakdown: scan.breakdown,
+          breakdown,
+          breakdownReasons:
+            scan.breakdownReasons ||
+            buildBreakdownReasons({ ingredientResults, brandProfile, breakdown }),
           alternatives: scan.alternatives || [],
+          nutritionFacts: scan.nutritionFacts || null,
         },
       ],
     });
@@ -46,22 +54,35 @@ export const useScanStore = create((set) => ({
       }
       const { products } = await response.json();
 
-      set({ scanResults: products, status: "done" });
+      // Compute breakdownReasons client-side for each product
+      const enrichedProducts = products.map((p) => ({
+        ...p,
+        breakdownReasons: buildBreakdownReasons({
+          ingredientResults: p.ingredientResults,
+          brandProfile: p.brandProfile,
+          breakdown: p.breakdown,
+        }),
+      }));
+
+      set({ scanResults: enrichedProducts, status: "done" });
 
       // Save primary product to history
-      const primary = products[0];
+      const primary = enrichedProducts[0];
       if (primary) {
         saveScan({
           product_name: primary.product.product_name,
           brand: primary.product.brand,
           image_thumbnail: imageBase64.slice(0, 500),
           score: primary.score,
-          score_tier: primary.score >= 80 ? "excellent" : primary.score >= 50 ? "moderate" : "poor",
+          score_tier:
+            primary.score >= 80 ? "excellent" : primary.score >= 50 ? "moderate" : "poor",
           breakdown: primary.breakdown,
+          breakdownReasons: primary.breakdownReasons,
           ingredientResults: primary.ingredientResults,
           brandProfile: primary.brandProfile,
           flagged_ingredients: primary.ingredientResults.filter((i) => i.flag !== "safe"),
           alternatives: primary.alternatives,
+          nutritionFacts: primary.nutritionFacts || null,
         });
       }
     } catch (err) {
