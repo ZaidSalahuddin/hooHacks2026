@@ -1,8 +1,8 @@
 import { NavLink } from "react-router-dom";
 
 const tabs = [
-  { to: "/", label: "Scanner", icon: "scan" },
-  { to: "/history", label: "History", icon: "history" },
+  { to: "/", label: "Survey Tool", icon: "scan" },
+  { to: "/history", label: "Field Log", icon: "history" },
 ];
 
 const icons = {
@@ -21,7 +21,7 @@ const icons = {
 
 export default function NavBar() {
   return (
-    <nav className="fixed bottom-0 left-0 right-0 bg-white/80 backdrop-blur-lg border-t border-cream-200 z-50">
+    <nav className="fixed bottom-0 left-0 right-0 bg-cream-50/90 backdrop-blur-lg border-t border-cream-300 z-50">
       <div className="max-w-lg mx-auto flex justify-around">
         {tabs.map((tab) => (
           <NavLink
@@ -29,7 +29,7 @@ export default function NavBar() {
             to={tab.to}
             className={({ isActive }) =>
               `flex flex-col items-center gap-1 py-3 px-6 text-xs font-medium transition-colors ${
-                isActive ? "text-green-700" : "text-green-400 hover:text-green-600"
+                isActive ? "text-gold-600" : "text-green-400 hover:text-gold-500"
               }`
             }
           >

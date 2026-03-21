@@ -31,15 +31,15 @@ export function computeScore({ ingredientSafety, environmentalImpact, brandEthic
 }
 
 export function getScoreTier(score) {
-  if (score >= 80) return { label: "Excellent", color: "green", emoji: "green" };
-  if (score >= 50) return { label: "Moderate", color: "yellow", emoji: "yellow" };
-  return { label: "Poor", color: "red", emoji: "red" };
+  if (score >= 80) return { label: "High Bounty", color: "gold", emoji: "⭐" };
+  if (score >= 50) return { label: "Moderate", color: "yellow", emoji: "🤠" };
+  return { label: "Low Bounty", color: "rust", emoji: "💀" };
 }
 
 export function getTierStyles(score) {
-  if (score >= 80) return { bg: "bg-green-100", text: "text-green-800", ring: "stroke-green-500" };
-  if (score >= 50) return { bg: "bg-yellow-100", text: "text-yellow-800", ring: "stroke-yellow-500" };
-  return { bg: "bg-red-100", text: "text-red-800", ring: "stroke-red-500" };
+  if (score >= 80) return { bg: "bg-gold-100", text: "text-gold-700", ring: "stroke-gold-500" };
+  if (score >= 50) return { bg: "bg-yellow-100", text: "text-yellow-700", ring: "stroke-yellow-500" };
+  return { bg: "bg-rust-100", text: "text-rust-600", ring: "stroke-rust-500" };
 }
 
 /**
@@ -144,9 +144,9 @@ export function buildBreakdownReasons({ ingredientResults, brandProfile, breakdo
 
 export function getFlagStyles(flag) {
   switch (flag) {
-    case "safe": return { bg: "bg-green-100", text: "text-green-800", icon: "check" };
+    case "safe": return { bg: "bg-safe-100", text: "text-safe-800", icon: "check" };
     case "moderate": return { bg: "bg-yellow-100", text: "text-yellow-800", icon: "warning" };
-    case "harmful": return { bg: "bg-red-100", text: "text-red-800", icon: "close" };
+    case "harmful": return { bg: "bg-rust-100", text: "text-rust-700", icon: "close" };
     default: return { bg: "bg-gray-100", text: "text-gray-800", icon: "help" };
   }
 }

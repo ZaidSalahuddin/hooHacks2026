@@ -9,15 +9,15 @@ const CATEGORIES = [
 ];
 
 function getBarColor(value) {
-  if (value >= 80) return "bg-green-500";
+  if (value >= 80) return "bg-gold-500";
   if (value >= 50) return "bg-yellow-500";
-  return "bg-red-500";
+  return "bg-rust-500";
 }
 
 function getTierLabel(value) {
-  if (value >= 80) return { text: "Excellent", style: "text-green-600" };
+  if (value >= 80) return { text: "Excellent", style: "text-gold-600" };
   if (value >= 50) return { text: "Moderate", style: "text-yellow-600" };
-  return { text: "Poor", style: "text-red-600" };
+  return { text: "Low Bounty", style: "text-rust-600" };
 }
 
 export default function BreakdownChart({ breakdown, reasons }) {
@@ -37,8 +37,8 @@ export default function BreakdownChart({ breakdown, reasons }) {
 
   return (
     <div className="space-y-2">
-      <h3 className="font-semibold text-lg text-green-900">Score Breakdown</h3>
-      <p className="text-xs text-green-500 mb-1">Tap a category to see why it received its score</p>
+      <h3 className="font-display text-lg text-green-900">Bounty Report</h3>
+      <p className="text-xs text-green-500 mb-1">Tap a category to read the deputy's notes</p>
 
       {excludedCount > 0 && (
         <p className="text-xs text-amber-600 mb-1">

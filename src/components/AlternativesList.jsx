@@ -5,7 +5,7 @@ export default function AlternativesList({ alternatives, currentScore }) {
 
   return (
     <div className="space-y-3">
-      <h3 className="font-semibold text-lg text-green-900">Better Alternatives</h3>
+      <h3 className="font-display text-lg text-green-900">Greener Pastures</h3>
       <div className="space-y-2">
         {alternatives.map((alt, i) => {
           const styles = getTierStyles(alt.score);
@@ -21,7 +21,7 @@ export default function AlternativesList({ alternatives, currentScore }) {
                 {alt.improvements && (
                   <div className="flex flex-wrap gap-1 mt-1">
                     {alt.improvements.slice(0, 3).map((imp, j) => (
-                      <span key={j} className="text-xs px-2 py-0.5 rounded-full bg-green-100 text-green-700">
+                      <span key={j} className="text-xs px-2 py-0.5 rounded-full bg-gold-100 text-gold-800">
                         {imp}
                       </span>
                     ))}
@@ -41,7 +41,7 @@ export default function AlternativesList({ alternatives, currentScore }) {
                   </a>
                 )}
               </div>
-              <div className="text-green-500 font-semibold text-sm shrink-0">
+              <div className="text-gold-600 font-semibold text-sm shrink-0">
                 +{alt.score - currentScore}
               </div>
             </div>

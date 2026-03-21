@@ -1,5 +1,5 @@
 import { create } from "zustand";
-import { analyzeProductImage, analyzeProduct } from "../lib/gemini";
+import { analyzeProductImage, analyzeProduct, findAlternatives } from "../lib/gemini";
 import { computeScore, buildBreakdownReasons } from "../lib/score";
 import { saveScan, getScan } from "../lib/history";
 import { getCachedProduct, cacheProduct } from "../lib/productCache";
@@ -109,10 +109,9 @@ export const useScanStore = create((set) => ({
         // Validate all Gemini results before using them
         brandProfile = validateBrandProfile(analysis.brand_profile);
         ingredientResults = validateIngredientResults(analysis.ingredients);
-        alternatives = validateAlternatives(analysis.alternatives);
         groundingSources = analysis._groundingSources || [];
 
-        set({ brandProfile, ingredientResults, alternatives, groundingSources });
+        set({ brandProfile, ingredientResults, groundingSources });
 
         // Step 4: Validate against Open Food Facts
         const offProduct = await lookupProduct(product.product_name, product.brand);
@@ -198,9 +197,15 @@ export const useScanStore = create((set) => ({
         const dataQuality = assessDataQuality(ingredientResults, brandProfile);
         console.log("[EcoScan] Data quality:", dataQuality);
 
-        set({ score, breakdown, breakdownReasons, dataQuality, status: "done" });
+        // Step 7: Find targeted alternatives now that we have score + breakdown
+        const rawAlternatives = await findAlternatives(
+          product.product_name, product.brand, score, breakdown, ingredientResults
+        );
+        alternatives = validateAlternatives(rawAlternatives).filter((a) => a.score > score);
 
-        // Step 7: Save to shared cache so other clients get the same score
+        set({ score, breakdown, breakdownReasons, dataQuality, alternatives, status: "done" });
+
+        // Step 8: Save to shared cache so other clients get the same score
         await cacheProduct(product.product_name, product.brand, {
           score,
           score_tier: score >= 80 ? "excellent" : score >= 50 ? "moderate" : "poor",
@@ -216,7 +221,7 @@ export const useScanStore = create((set) => ({
         });
       }
 
-      // Step 8: Save to local history
+      // Step 9: Save to local history
       saveScan({
         product_name: product.product_name,
         brand: product.brand,

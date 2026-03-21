@@ -81,7 +81,7 @@ export default function SourcesList({ groundingSources, brandProfile, ingredient
   return (
     <div className="space-y-3">
       <div className="flex items-center justify-between">
-        <h3 className="font-semibold text-lg text-green-900">Sources</h3>
+        <h3 className="font-display text-lg text-green-900">Evidence</h3>
         <span className="text-xs text-green-500">{allSources.length} reference{allSources.length !== 1 ? "s" : ""}</span>
       </div>
 

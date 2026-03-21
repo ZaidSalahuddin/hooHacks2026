@@ -199,9 +199,6 @@ Provide a complete sustainability analysis. You MUST respond with ONLY a JSON ob
   },
   "ingredients": [
     { "name": "ingredient name", "flag": "safe" or "moderate" or "harmful", "reason": "brief reason", "score": integer from 0 to 100 (e.g. safe=85, moderate=50, harmful=15), "confidence": "high" or "medium" or "low", "source_url": "URL of the source used for this ingredient's safety assessment (e.g. EWG Skin Deep page, PubChem, FDA, WHO, etc.)", "source_name": "Short name of the source (e.g. EWG, FDA, WHO, PubChem)" }
-  ],
-  "alternatives": [
-    { "name": "product name", "brand": "brand name", "score": number 0-100, "improvements": ["improvement1", "improvement2"], "source_url": "URL where this alternative was found" }
   ]
 }
 
@@ -223,8 +220,6 @@ CONFIDENCE RULES — this is critical for data quality:
 
 For brand_profile, include "source_urls" — an array of the web pages you used to assess the brand's ethics, certifications, and practices.
 For each ingredient, you MUST include a "source_url" linking to the actual webpage you used for the safety assessment (e.g. https://www.ewg.org/skindeep/ingredients/..., https://pubchem.ncbi.nlm.nih.gov/compound/..., https://www.fda.gov/..., etc.) and a short "source_name" (e.g. "EWG", "PubChem", "FDA").
-For each alternative product, include "source_url" linking to where you found the recommendation.
-For alternatives, suggest 3-5 more sustainable products.
 Include ALL ingredients listed above in the ingredients array.`;
 
   const result = await searchModel.generateContent(prompt);
@@ -236,4 +231,42 @@ Include ALL ingredients listed above in the ingredients array.`;
   parsed._groundingSources = groundingSources;
 
   return parsed;
+}
+
+export async function findAlternatives(productName, brand, score, breakdown, ingredientResults) {
+  // Build context about what's dragging the score down
+  const weakCategories = Object.entries(breakdown)
+    .filter(([, v]) => v != null && v < 60)
+    .sort(([, a], [, b]) => a - b)
+    .map(([k, v]) => `${k.replace(/_/g, " ")} (${v}/100)`)
+    .join(", ");
+
+  const harmfulIngredients = ingredientResults
+    .filter((i) => i.flag === "harmful")
+    .slice(0, 3)
+    .map((i) => i.name)
+    .join(", ");
+
+  const prompt = `You are a sustainability expert. A user scanned "${productName}" by ${brand} and it scored ${score}/100.
+
+Weakest areas: ${weakCategories || "none identified"}
+${harmfulIngredients ? `Harmful ingredients to avoid: ${harmfulIngredients}` : ""}
+
+Search the web and find 3-5 real, commercially available alternative products in the same category that have better sustainability practices. Only suggest products that would genuinely score higher than ${score}/100.
+
+For each alternative explain specifically what makes it more sustainable than the scanned product.
+
+Respond with ONLY a JSON array, no other text:
+[
+  {
+    "name": "exact product name",
+    "brand": "brand name",
+    "score": integer 0-100 (must be higher than ${score}),
+    "improvements": ["specific improvement 1", "specific improvement 2"],
+    "source_url": "URL where you found this alternative"
+  }
+]`;
+
+  const result = await searchModel.generateContent(prompt);
+  return extractJSON(result.response.text());
 }

@@ -1,30 +1,56 @@
 @import "tailwindcss";
 
 @theme {
-  --color-green-950: #0a1f0d;
-  --color-green-900: #14331a;
-  --color-green-800: #1e4d27;
-  --color-green-700: #2d6a3a;
-  --color-green-600: #3d8b4e;
-  --color-green-500: #4caf62;
-  --color-green-400: #72c784;
-  --color-green-300: #a3ddb0;
-  --color-green-200: #ccefd3;
-  --color-green-100: #e8f8eb;
-  --color-green-50: #f3fcf5;
+  /* Structural UI: leather/brown palette replaces green-* */
+  --color-green-950: #1E0F06;
+  --color-green-900: #3B1F0C;
+  --color-green-800: #5C2E0E;
+  --color-green-700: #7A3D14;
+  --color-green-600: #9B5523;
+  --color-green-500: #B87333;
+  --color-green-400: #C9934D;
+  --color-green-300: #DAB87A;
+  --color-green-200: #E8D4A8;
+  --color-green-100: #F3E8CC;
+  --color-green-50:  #FAF4E8;
 
-  --color-terra-700: #8b3a1a;
-  --color-terra-600: #b34e24;
-  --color-terra-500: #d4663a;
-  --color-terra-400: #e08a64;
-  --color-terra-300: #ecb09a;
+  /* Muted gold — accents, active states */
+  --color-gold-800: #6B4A00;
+  --color-gold-700: #856000;
+  --color-gold-600: #A07800;
+  --color-gold-500: #BA8A00;
+  --color-gold-400: #D4A020;
+  --color-gold-300: #E6B840;
+  --color-gold-200: #F0CC80;
+  --color-gold-100: #F8E4B0;
+  --color-gold-50:  #FDF4D8;
 
-  --color-cream-50: #fefdfb;
+  /* Faded red/rust — danger, harmful */
+  --color-rust-700: #8B1E0D;
+  --color-rust-600: #A82B18;
+  --color-rust-500: #C44230;
+  --color-rust-400: #D66550;
+  --color-rust-300: #E48E80;
+  --color-rust-200: #F0B8B0;
+  --color-rust-100: #F8DDD8;
+  --color-rust-50:  #FDF0EE;
+
+  /* Safe green — ingredient safety indicators only */
+  --color-safe-800: #166534;
+  --color-safe-700: #15803d;
+  --color-safe-600: #16a34a;
+  --color-safe-500: #22c55e;
+  --color-safe-200: #bbf7d0;
+  --color-safe-100: #dcfce7;
+  --color-safe-50:  #f0fdf4;
+
+  /* Parchment neutrals */
+  --color-cream-50:  #fefdfb;
   --color-cream-100: #faf8f4;
   --color-cream-200: #f0ece4;
   --color-cream-300: #e0d9cc;
 
-  --font-display: 'Playfair Display', serif;
+  --font-display: 'Rye', serif;
   --font-body: 'DM Sans', sans-serif;
 }
 
@@ -32,6 +58,17 @@ body {
   margin: 0;
   font-family: var(--font-body);
   background-color: var(--color-cream-50);
+  /* Desert sky → dusty horizon gradient */
+  background-image:
+    linear-gradient(
+      to bottom,
+      #c8b99a 0%,
+      #dfd0b0 18%,
+      #ede3c8 35%,
+      #f5edd8 55%,
+      #faf4e8 100%
+    );
+  background-attachment: fixed;
   color: var(--color-green-950);
   min-height: 100vh;
 }

@@ -92,7 +92,7 @@ export default function ScannerPage() {
           onClick={handleNewScan}
           className="text-green-700 font-medium hover:text-green-900 transition-colors"
         >
-          &larr; New Scan
+          &larr; New Bounty
         </button>
 
         {/* Product header */}
@@ -154,9 +154,27 @@ export default function ScannerPage() {
   // Scanner view
   return (
     <div className="max-w-lg mx-auto px-4 py-6 pb-24 flex flex-col items-center gap-6">
-      <div className="text-center">
-        <h1 className="font-display text-3xl font-bold text-green-900">EcoScan</h1>
-        <p className="text-green-600 mt-1">Scan a product to check its sustainability</p>
+      <div className="text-center space-y-2">
+        <h1 className="font-display text-3xl font-bold text-green-900">Sustainability Sheriff</h1>
+        <p className="text-green-600">Draw your product — get the full bounty report</p>
+        <div className="mt-3 p-4 rounded-xl bg-cream-100 border border-cream-300 text-left space-y-2 text-sm text-green-800">
+          <p className="font-semibold text-green-900">How it works</p>
+          <p>Every product earns a <span className="font-semibold text-gold-600">bounty score</span> from 0–100. A <span className="font-semibold text-gold-600">higher bounty means a more sustainable product</span> — better ingredients, ethical brand practices, and lower environmental impact.</p>
+          <div className="flex gap-3 pt-1">
+            <div className="flex-1 p-2 rounded-lg bg-gold-50 border border-gold-200 text-center">
+              <div className="font-display text-gold-600 text-sm">High Bounty</div>
+              <div className="text-xs text-green-700 mt-0.5">80–100 · Seek these out</div>
+            </div>
+            <div className="flex-1 p-2 rounded-lg bg-yellow-50 border border-yellow-200 text-center">
+              <div className="font-display text-yellow-600 text-sm">Moderate</div>
+              <div className="text-xs text-green-700 mt-0.5">50–79 · Room to improve</div>
+            </div>
+            <div className="flex-1 p-2 rounded-lg bg-rust-50 border border-rust-200 text-center">
+              <div className="font-display text-rust-600 text-sm">Low Bounty</div>
+              <div className="text-xs text-green-700 mt-0.5">0–49 · Avoid if possible</div>
+            </div>
+          </div>
+        </div>
       </div>
 
       {/* Camera or preview */}
@@ -185,7 +203,7 @@ export default function ScannerPage() {
           <div className="absolute inset-0 bg-green-950/60 flex flex-col items-center justify-center text-white">
             <div className="w-10 h-10 border-4 border-white/30 border-t-white rounded-full animate-spin mb-3" />
             <p className="font-medium">
-              {status === "scanning" ? "Scanning product..." : "Analyzing sustainability..."}
+              {status === "scanning" ? "Tracking down the product..." : "Reading the trail..."}
             </p>
           </div>
         )}
@@ -194,7 +212,7 @@ export default function ScannerPage() {
       {/* Error */}
       {status === "error" && (
         <div className="w-full p-4 rounded-xl bg-red-50 text-red-800 text-sm">
-          <p className="font-medium">Scan failed</p>
+          <p className="font-medium">Trail went cold</p>
           <p>{error}</p>
         </div>
       )}
@@ -204,16 +222,16 @@ export default function ScannerPage() {
         {cameraActive ? (
           <button
             onClick={capturePhoto}
-            className="flex-1 py-3 px-6 rounded-xl bg-green-700 text-white font-semibold hover:bg-green-800 transition-colors"
+            className="flex-1 py-3 px-6 rounded-xl bg-green-800 text-cream-50 font-semibold hover:bg-green-900 transition-colors"
           >
-            Capture Photo
+            Mark Log
           </button>
         ) : (
           <>
             <button
               onClick={startCamera}
               disabled={status === "scanning" || status === "analyzing"}
-              className="flex-1 py-3 px-6 rounded-xl bg-green-700 text-white font-semibold hover:bg-green-800 transition-colors disabled:opacity-50"
+              className="flex-1 py-3 px-6 rounded-xl bg-green-800 text-cream-50 font-semibold hover:bg-green-900 transition-colors disabled:opacity-50"
             >
               Use Camera
             </button>
