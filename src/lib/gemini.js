@@ -3,7 +3,10 @@ import {
   extractJSON,
   normalizeAnalysisResult,
   normalizeBrandDetectionResult,
+  normalizeBrandProfileResult,
   normalizeBrandValidationResult,
+  normalizeClassificationResult,
+  normalizeIngredientAnalysisResult,
   normalizeIngredientDetectionResult,
   normalizeIngredientValidationResult,
   normalizeProductCandidatesResult,
@@ -139,10 +142,36 @@ Respond with ONLY this JSON object:
   }
 }
 
+export async function classifyImageContent(imageBase64, mimeType = "image/jpeg") {
+  const prompt = `You are an image classification agent.
+
+Analyze this product packaging image and determine what label content is clearly visible.
+
+Respond with ONLY this JSON object:
+{
+  "hasBrandLabel": true or false,
+  "hasIngredientList": true or false,
+  "confidence": number 0-100
+}`;
+
+  try {
+    const data = await runVisionJSON(
+      [prompt, { inlineData: { mimeType, data: imageBase64 } }],
+      "We could not classify the content of this image."
+    );
+    return normalizeClassificationResult(data);
+  } catch {
+    // Default to assuming both are present if classification fails
+    return { hasBrandLabel: true, hasIngredientList: true, confidence: 0 };
+  }
+}
+
 export async function validateBrand(product, imageBase64, mimeType = "image/jpeg") {
   const prompt = `You are a brand validation agent.
 
-Validate whether the proposed brand and product name match the packaging shown in the image.
+Validate whether the proposed brand and optional product name match the packaging shown in the image.
+
+If the proposed product name is missing or incomplete, infer the most likely product name from the packaging.
 
 Reject vague, generic, or mismatched brand identifications.
 
@@ -180,7 +209,7 @@ Respond with ONLY this JSON object:
 export async function validateIngredients(product, imageBase64, mimeType = "image/jpeg") {
   const prompt = `You are an ingredient validation agent.
 
-Validate whether the extracted ingredient list is readable, plausible, and matches the product image.
+Validate whether the extracted ingredient list is readable, plausible, and matches the product image and validated brand/product context.
 
 Reject ingredient lists that are missing, too short to be useful, clearly malformed, or unrelated to the packaging.
 
@@ -211,6 +240,54 @@ Respond with ONLY this JSON object:
     return normalizeIngredientValidationResult(data);
   } catch {
     throw new Error("We could not verify the ingredient list from this image. Please retake the photo with the ingredients panel clearly visible.");
+  }
+}
+
+export async function researchBrand(brand) {
+  const prompt = `You are a brand research agent. Use web search to research the sustainability and ethics profile of the brand "${brand}".
+
+Respond with ONLY this JSON object:
+{
+  "certifications": ["list any: B Corp, Fair Trade, Organic, Cruelty-Free, Rainforest Alliance"],
+  "carbonReport": true or false,
+  "laborPractices": "brief summary",
+  "overallEthicsScore": number 0-100
+}`;
+
+  try {
+    const result = await searchModel.generateContent(prompt);
+    return normalizeBrandProfileResult(extractJSON(result.response.text()));
+  } catch {
+    throw new Error("We could not research the brand sustainability profile. Please try again.");
+  }
+}
+
+export async function analyzeIngredients(brand, ingredients) {
+  const safeIngredients = Array.isArray(ingredients) ? ingredients : [];
+  const ingredientList = safeIngredients.join(", ");
+
+  const prompt = `You are an ingredient analysis agent. Analyze the safety and environmental impact of these ingredients from the brand "${brand}".
+
+Ingredients: ${ingredientList}
+
+Respond with ONLY this JSON object:
+{
+  "ingredients": [
+    { "name": "ingredient name", "flag": "safe" or "moderate" or "harmful", "reason": "brief reason", "score": number 0-100 }
+  ],
+  "alternatives": [
+    { "name": "product name", "brand": "brand name", "score": number 0-100, "improvements": ["improvement1", "improvement2"] }
+  ]
+}
+
+For each ingredient, assess EWG safety rating, health effects, allergen status, and environmental impact.
+Include ALL ingredients listed above. Suggest 3-5 more sustainable product alternatives.`;
+
+  try {
+    const result = await searchModel.generateContent(prompt);
+    return normalizeIngredientAnalysisResult(extractJSON(result.response.text()));
+  } catch {
+    throw new Error("We could not analyze the ingredient safety. Please try again.");
   }
 }
 

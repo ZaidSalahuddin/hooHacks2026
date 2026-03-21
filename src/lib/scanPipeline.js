@@ -1,7 +1,6 @@
 import {
   analyzeProduct,
   identifyBrands,
-  identifyDistinctProducts,
   identifyIngredients,
   validateBrand,
   validateIngredients,
@@ -14,39 +13,27 @@ function buildValidationError(reason, issues = []) {
 }
 
 export async function runScanPipeline(imageBase64, mimeType = "image/jpeg") {
-  const productCandidates = await identifyDistinctProducts(imageBase64, mimeType);
-
-  if (productCandidates.product_count !== 1 || productCandidates.products.length !== 1) {
-    throw new Error("Please scan one clearly visible product at a time.");
-  }
-
-  const primaryCandidate = productCandidates.products[0];
-
   const [brandDetection, ingredientDetection] = await Promise.all([
     identifyBrands(imageBase64, mimeType),
-    identifyIngredients(imageBase64, mimeType),
+    identifyIngredients(imageBase64, mimeType).catch(() => ({
+      ingredients: [],
+      confidence: 0,
+      readability: "unreadable",
+    })),
   ]);
 
   const detectedBrand = brandDetection.brands[0]?.brand || "";
-  const product = {
-    product_name: primaryCandidate.product_name,
+  if (!detectedBrand) {
+    throw new Error("We could not identify a clear brand from this image. Please retake the photo with the front label visible.");
+  }
+
+  const brandCandidate = {
+    product_name: "",
     brand: detectedBrand,
     ingredients: ingredientDetection.ingredients,
   };
 
-  if (!product.product_name || !product.brand) {
-    throw new Error("We could not identify a clear product name and brand. Please retake the photo with the front label visible.");
-  }
-
-  if (product.ingredients.length === 0) {
-    throw new Error("We could not read a usable ingredient list from this image. Please retake the photo with the ingredients panel visible.");
-  }
-
-  const [brandValidation, ingredientValidation] = await Promise.all([
-    validateBrand(product, imageBase64, mimeType),
-    validateIngredients(product, imageBase64, mimeType),
-  ]);
-
+  const brandValidation = await validateBrand(brandCandidate, imageBase64, mimeType);
   if (!brandValidation.valid) {
     throw buildValidationError(
       brandValidation.reason || "The detected brand could not be validated.",
@@ -54,6 +41,17 @@ export async function runScanPipeline(imageBase64, mimeType = "image/jpeg") {
     );
   }
 
+  const validatedProduct = {
+    product_name: brandValidation.normalized_product_name || "Unknown Product",
+    brand: brandValidation.normalized_brand || detectedBrand,
+    ingredients: ingredientDetection.ingredients,
+  };
+
+  if (validatedProduct.ingredients.length === 0) {
+    throw new Error("We could not read a usable ingredient list from this image. Please retake the photo with the ingredients panel visible.");
+  }
+
+  const ingredientValidation = await validateIngredients(validatedProduct, imageBase64, mimeType);
   if (!ingredientValidation.valid) {
     throw buildValidationError(
       ingredientValidation.reason || "The ingredient list could not be validated.",
@@ -61,15 +59,15 @@ export async function runScanPipeline(imageBase64, mimeType = "image/jpeg") {
     );
   }
 
-  const validatedProduct = {
-    product_name: brandValidation.normalized_product_name || product.product_name,
-    brand: brandValidation.normalized_brand || product.brand,
+  const fullyValidatedProduct = {
+    product_name: validatedProduct.product_name,
+    brand: validatedProduct.brand,
     ingredients: ingredientValidation.normalized_ingredients.length > 0
       ? ingredientValidation.normalized_ingredients
-      : product.ingredients,
+      : validatedProduct.ingredients,
   };
 
-  const analysis = await analyzeProduct(validatedProduct.brand, validatedProduct.ingredients);
+  const analysis = await analyzeProduct(fullyValidatedProduct.brand, fullyValidatedProduct.ingredients);
 
   const brandProfile = analysis.brand_profile || {
     certifications: [],
@@ -103,7 +101,7 @@ export async function runScanPipeline(imageBase64, mimeType = "image/jpeg") {
   });
 
   return {
-    product: validatedProduct,
+    product: fullyValidatedProduct,
     brandProfile,
     ingredientResults,
     alternatives,

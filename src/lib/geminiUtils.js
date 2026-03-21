@@ -158,6 +158,45 @@ export function normalizeIngredientValidationResult(data) {
   };
 }
 
+export function normalizeClassificationResult(data) {
+  return {
+    hasBrandLabel: toBoolean(data?.hasBrandLabel, true),
+    hasIngredientList: toBoolean(data?.hasIngredientList, true),
+    confidence: clampNumber(data?.confidence, 50, 0, 100),
+  };
+}
+
+export function normalizeBrandProfileResult(data) {
+  return {
+    certifications: asStringArray(data?.certifications),
+    carbonReport: toBoolean(data?.carbonReport, false),
+    laborPractices: asString(data?.laborPractices) || "Unknown",
+    overallEthicsScore: clampNumber(data?.overallEthicsScore, 50, 0, 100),
+  };
+}
+
+export function normalizeIngredientAnalysisResult(data) {
+  const ingredients = Array.isArray(data?.ingredients) ? data.ingredients : [];
+  const alternatives = Array.isArray(data?.alternatives) ? data.alternatives : [];
+
+  return {
+    ingredients: ingredients.map((ingredient) => ({
+      name: asString(ingredient?.name),
+      flag: ["safe", "moderate", "harmful"].includes(asString(ingredient?.flag).toLowerCase())
+        ? asString(ingredient?.flag).toLowerCase()
+        : "moderate",
+      reason: asString(ingredient?.reason),
+      score: clampNumber(ingredient?.score, 50, 0, 100),
+    })),
+    alternatives: alternatives.map((alternative) => ({
+      name: asString(alternative?.name),
+      brand: asString(alternative?.brand),
+      score: clampNumber(alternative?.score, 50, 0, 100),
+      improvements: asStringArray(alternative?.improvements),
+    })),
+  };
+}
+
 export function normalizeAnalysisResult(data) {
   const brandProfile = data?.brand_profile || {};
   const ingredients = Array.isArray(data?.ingredients) ? data.ingredients : [];
