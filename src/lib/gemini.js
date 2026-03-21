@@ -62,12 +62,20 @@ function extractJSON(text) {
 export async function analyzeProductImage(imageBase64, mimeType = "image/jpeg") {
   const prompt = `You are a sustainability and ingredient analysis assistant.
 
-Given the product image provided:
+Given the image provided, first determine if it contains a recognizable consumer product (e.g. food, drink, cosmetic, cleaning product, supplement, etc.).
+
+If NO product is visible in the image, respond with:
+{
+  "product_found": false
+}
+
+If a product IS visible:
 1. Identify the product name and brand
 2. Extract the complete ingredients list exactly as printed
 
-Respond with this JSON schema:
+Respond with:
 {
+  "product_found": true,
   "product_name": "string",
   "brand": "string",
   "ingredients": ["string"]
@@ -83,7 +91,13 @@ Respond with this JSON schema:
     },
   ]);
 
-  return extractJSON(result.response.text());
+  const parsed = extractJSON(result.response.text());
+
+  if (!parsed.product_found) {
+    throw new Error("No product detected in the image. Please take a photo of a consumer product (food, drink, cosmetic, etc.) and try again.");
+  }
+
+  return parsed;
 }
 
 export async function analyzeProduct(brand, ingredients) {
