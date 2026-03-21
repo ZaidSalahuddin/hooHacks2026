@@ -1,5 +1,4 @@
 import { create } from "zustand";
-import { runScanPipeline } from "../lib/scanPipeline";
 import { saveScan, getScan } from "../lib/history";
 
 export const useScanStore = create((set) => ({
@@ -48,8 +47,17 @@ export const useScanStore = create((set) => ({
 
     try {
       set({ status: "analyzing" });
+      const response = await fetch('/api/scan', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ imageBase64, mimeType }),
+      });
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.error || 'Scan failed. Please try again.');
+      }
       const { product, brandProfile, ingredientResults, alternatives, breakdown, score } =
-        await runScanPipeline(imageBase64, mimeType);
+        await response.json();
 
       set({ product, brandProfile, ingredientResults, alternatives, breakdown, score, status: "done" });
 
