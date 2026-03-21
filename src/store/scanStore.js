@@ -19,6 +19,7 @@ export const useScanStore = create((set) => ({
   score: null,
   breakdown: null,
   breakdownReasons: null,
+  groundingSources: [],
   alternatives: [],
 
   reset: () =>
@@ -35,6 +36,7 @@ export const useScanStore = create((set) => ({
       score: null,
       breakdown: null,
       breakdownReasons: null,
+      groundingSources: [],
       alternatives: [],
     }),
 
@@ -55,6 +57,7 @@ export const useScanStore = create((set) => ({
       score: scan.score,
       breakdown,
       breakdownReasons: scan.breakdownReasons || buildBreakdownReasons({ ingredientResults, brandProfile, breakdown }),
+      groundingSources: scan.groundingSources || [],
       alternatives: scan.alternatives || [],
     });
   },
@@ -73,6 +76,7 @@ export const useScanStore = create((set) => ({
       const cached = await getCachedProduct(product.product_name, product.brand);
 
       let brandProfile, ingredientResults, alternatives, breakdown, score, breakdownReasons;
+      let groundingSources = [];
       let nutritionSource = "gemini";
       const allWarnings = [];
 
@@ -86,10 +90,11 @@ export const useScanStore = create((set) => ({
         nutritionFacts = cached.nutritionFacts || nutritionFacts;
         nutritionSource = cached.nutritionSource || "cached";
         breakdownReasons = cached.breakdownReasons || buildBreakdownReasons({ ingredientResults, brandProfile, breakdown });
+        groundingSources = cached.groundingSources || [];
 
         set({
           brandProfile, ingredientResults, alternatives, score, breakdown, breakdownReasons,
-          nutritionFacts, nutritionSource, validationWarnings: [],
+          groundingSources, nutritionFacts, nutritionSource, validationWarnings: [],
           status: "done",
         });
       } else {
@@ -105,8 +110,9 @@ export const useScanStore = create((set) => ({
 
         ingredientResults = analysis.ingredients || [];
         alternatives = analysis.alternatives || [];
+        groundingSources = analysis._groundingSources || [];
 
-        set({ brandProfile, ingredientResults, alternatives });
+        set({ brandProfile, ingredientResults, alternatives, groundingSources });
 
         // Step 4: Validate against Open Food Facts
         const offProduct = await lookupProduct(product.product_name, product.brand);
@@ -166,6 +172,7 @@ export const useScanStore = create((set) => ({
           score_tier: score >= 80 ? "excellent" : score >= 50 ? "moderate" : "poor",
           breakdown,
           breakdownReasons,
+          groundingSources,
           nutritionFacts,
           nutritionSource,
           ingredientResults,
@@ -183,6 +190,7 @@ export const useScanStore = create((set) => ({
         score_tier: score >= 80 ? "excellent" : score >= 50 ? "moderate" : "poor",
         breakdown,
         breakdownReasons,
+        groundingSources,
         nutritionFacts,
         nutritionSource,
         ingredientResults,

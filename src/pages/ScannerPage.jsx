@@ -6,6 +6,7 @@ import IngredientList from "../components/IngredientList";
 import BrandProfile from "../components/BrandProfile";
 import AlternativesList from "../components/AlternativesList";
 import NutritionFacts from "../components/NutritionFacts";
+import SourcesList from "../components/SourcesList";
 
 export default function ScannerPage() {
   const fileInputRef = useRef(null);
@@ -22,7 +23,7 @@ export default function ScannerPage() {
     }
   }, []);
 
-  const { status, error, product, nutritionFacts, nutritionSource, validationWarnings, ingredientResults, brandProfile, score, breakdown, breakdownReasons, alternatives, scan, reset } =
+  const { status, error, product, nutritionFacts, nutritionSource, validationWarnings, ingredientResults, brandProfile, score, breakdown, breakdownReasons, groundingSources, alternatives, scan, reset } =
     useScanStore();
 
   const handleFileSelect = useCallback(
@@ -131,6 +132,16 @@ export default function ScannerPage() {
         {/* Alternatives */}
         <div className="p-5 rounded-2xl bg-white shadow-sm">
           <AlternativesList alternatives={alternatives} currentScore={score} />
+        </div>
+
+        {/* Sources */}
+        <div className="p-5 rounded-2xl bg-white shadow-sm">
+          <SourcesList
+            groundingSources={groundingSources}
+            brandProfile={brandProfile}
+            ingredientResults={ingredientResults}
+            alternatives={alternatives}
+          />
         </div>
       </div>
     );

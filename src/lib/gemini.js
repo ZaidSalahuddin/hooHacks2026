@@ -134,6 +134,48 @@ CRITICAL RULES:
   return parsed;
 }
 
+/**
+ * Extract grounding sources from Gemini's search-grounded response.
+ * Returns an array of { title, url, domain }.
+ */
+function extractGroundingSources(response) {
+  try {
+    const candidate = response.candidates?.[0];
+    const metadata = candidate?.groundingMetadata;
+    if (!metadata) return [];
+
+    // groundingChunks contains the web sources Gemini actually used
+    const chunks = metadata.groundingChunks || [];
+    const seen = new Set();
+    const sources = [];
+
+    for (const chunk of chunks) {
+      const web = chunk.web;
+      if (!web?.uri) continue;
+      if (seen.has(web.uri)) continue;
+      seen.add(web.uri);
+
+      let domain;
+      try {
+        domain = new URL(web.uri).hostname.replace("www.", "");
+      } catch {
+        domain = "web";
+      }
+
+      sources.push({
+        title: web.title || domain,
+        url: web.uri,
+        domain,
+      });
+    }
+
+    // Also check searchEntryPoint for the search query used
+    return sources;
+  } catch {
+    return [];
+  }
+}
+
 export async function analyzeProduct(brand, ingredients) {
   const ingredientList = ingredients.slice(0, 15).join(", ");
 
@@ -148,21 +190,30 @@ Provide a complete sustainability analysis. You MUST respond with ONLY a JSON ob
     "certifications": ["list any: B Corp, Fair Trade, Organic, Cruelty-Free, Rainforest Alliance"],
     "carbonReport": true or false,
     "laborPractices": "brief summary",
-    "overallEthicsScore": number 0-100
+    "overallEthicsScore": number 0-100,
+    "source_urls": [{ "url": "https://...", "title": "Page title or description" }]
   },
   "ingredients": [
     { "name": "ingredient name", "flag": "safe" or "moderate" or "harmful", "reason": "brief reason", "score": number 0-100, "source_url": "URL of the source used for this ingredient's safety assessment (e.g. EWG Skin Deep page, PubChem, FDA, WHO, etc.)", "source_name": "Short name of the source (e.g. EWG, FDA, WHO, PubChem)" }
   ],
   "alternatives": [
-    { "name": "product name", "brand": "brand name", "score": number 0-100, "improvements": ["improvement1", "improvement2"] }
+    { "name": "product name", "brand": "brand name", "score": number 0-100, "improvements": ["improvement1", "improvement2"], "source_url": "URL where this alternative was found" }
   ]
 }
 
-For each ingredient, assess EWG safety rating, health effects, allergen status, and environmental impact.
+For brand_profile, include "source_urls" — an array of the web pages you used to assess the brand's ethics, certifications, and practices.
 For each ingredient, you MUST include a "source_url" linking to the actual webpage you used for the safety assessment (e.g. https://www.ewg.org/skindeep/ingredients/..., https://pubchem.ncbi.nlm.nih.gov/compound/..., https://www.fda.gov/..., etc.) and a short "source_name" (e.g. "EWG", "PubChem", "FDA").
+For each alternative product, include "source_url" linking to where you found the recommendation.
 For alternatives, suggest 3-5 more sustainable products.
 Include ALL ingredients listed above in the ingredients array.`;
 
   const result = await searchModel.generateContent(prompt);
-  return extractJSON(result.response.text());
+  const parsed = extractJSON(result.response.text());
+
+  // Extract grounding sources from Gemini's search metadata
+  const groundingSources = extractGroundingSources(result.response);
+  console.log("[EcoScan] Grounding sources:", groundingSources);
+  parsed._groundingSources = groundingSources;
+
+  return parsed;
 }
