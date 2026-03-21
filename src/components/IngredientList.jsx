@@ -99,16 +99,23 @@ export default function IngredientList({ ingredients }) {
             >
               <span className="text-lg shrink-0">{config.icon}</span>
               <div className="min-w-0 flex-1">
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-2 flex-wrap">
                   <span className="font-medium text-green-900">{ing.name}</span>
                   <span className={`text-xs px-2 py-0.5 rounded-full ${styles.bg} ${styles.text} font-medium capitalize`}>
                     {ing.flag}
                   </span>
+                  {ing.confidence === "low" && (
+                    <span className="text-xs px-2 py-0.5 rounded-full bg-red-50 text-red-500 font-medium">
+                      Low confidence
+                    </span>
+                  )}
                   {ing.score != null && (
-                    <span className="text-xs text-green-500 ml-auto">{ing.score}/100</span>
+                    <span className={`text-xs ml-auto ${ing.confidence === "low" ? "text-red-400" : "text-green-500"}`}>
+                      {ing.score}/100{ing.confidence === "low" ? "*" : ""}
+                    </span>
                   )}
                 </div>
-                <p className="text-sm text-green-700 mt-0.5">{ing.reason}</p>
+                <p className={`text-sm mt-0.5 ${ing.confidence === "low" ? "text-green-500 italic" : "text-green-700"}`}>{ing.reason}</p>
                 {ing.source_url && (
                   <a
                     href={ing.source_url}

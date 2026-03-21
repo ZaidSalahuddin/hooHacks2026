@@ -36,7 +36,7 @@ const SOURCE_LABELS = {
   cached: { label: "Cached", style: "bg-gray-100 text-gray-600" },
 };
 
-export default function NutritionFacts({ nutrition, source, warnings }) {
+export default function NutritionFacts({ nutrition, source }) {
   if (!nutrition) return null;
 
   const sourceInfo = SOURCE_LABELS[source] || SOURCE_LABELS.gemini;
@@ -49,18 +49,6 @@ export default function NutritionFacts({ nutrition, source, warnings }) {
           {sourceInfo.label}
         </span>
       </div>
-
-      {/* Validation warnings */}
-      {warnings?.length > 0 && (
-        <div className="p-2.5 rounded-lg bg-amber-50 border border-amber-200">
-          <p className="text-xs font-medium text-amber-800 mb-1">Data corrections applied:</p>
-          <ul className="text-xs text-amber-700 space-y-0.5">
-            {warnings.map((w, i) => (
-              <li key={i}>- {w}</li>
-            ))}
-          </ul>
-        </div>
-      )}
 
       {nutrition.serving_size && (
         <p className="text-sm text-green-700">

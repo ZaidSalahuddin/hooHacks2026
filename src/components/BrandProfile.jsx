@@ -11,7 +11,18 @@ export default function BrandProfile({ profile, brand }) {
 
   return (
     <div className="space-y-3">
-      <h3 className="font-semibold text-lg text-green-900">Brand Profile: {brand}</h3>
+      <div className="flex items-center justify-between">
+        <h3 className="font-semibold text-lg text-green-900">Brand Profile: {brand}</h3>
+        {profile.confidence === "low" && (
+          <span className="text-xs px-2 py-0.5 rounded-full bg-red-50 text-red-500 font-medium">
+            Low confidence
+          </span>
+        )}
+      </div>
+
+      {profile.confidence === "low" && profile.confidence_reason && (
+        <p className="text-xs text-red-400 italic">{profile.confidence_reason}</p>
+      )}
 
       <div className="flex flex-wrap gap-2">
         {profile.certifications && profile.certifications.length > 0 ? (

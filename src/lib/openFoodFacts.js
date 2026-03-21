@@ -136,6 +136,30 @@ export function validateNutrition(geminiNutrition, offProduct) {
     }
   }
 
+  // Sanity check: added sugars cannot exceed total sugars
+  const totalSugars = Number(merged.total_sugars_g);
+  const addedSugars = Number(merged.added_sugars_g);
+  if (!isNaN(totalSugars) && !isNaN(addedSugars) && addedSugars > totalSugars) {
+    merged.added_sugars_g = totalSugars;
+    warnings.push(`Added Sugars: capped from ${addedSugars}g to ${totalSugars}g (cannot exceed Total Sugars)`);
+  }
+
+  // Sanity check: saturated fat cannot exceed total fat
+  const totalFat = Number(merged.total_fat_g);
+  const satFat = Number(merged.saturated_fat_g);
+  if (!isNaN(totalFat) && !isNaN(satFat) && satFat > totalFat) {
+    merged.saturated_fat_g = totalFat;
+    warnings.push(`Saturated Fat: capped from ${satFat}g to ${totalFat}g (cannot exceed Total Fat)`);
+  }
+
+  // Sanity check: dietary fiber cannot exceed total carbs
+  const totalCarbs = Number(merged.total_carbohydrates_g);
+  const fiber = Number(merged.dietary_fiber_g);
+  if (!isNaN(totalCarbs) && !isNaN(fiber) && fiber > totalCarbs) {
+    merged.dietary_fiber_g = totalCarbs;
+    warnings.push(`Dietary Fiber: capped from ${fiber}g to ${totalCarbs}g (cannot exceed Total Carbs)`);
+  }
+
   return {
     nutrition: merged,
     warnings,

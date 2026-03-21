@@ -4,6 +4,7 @@ import { computeScore, buildBreakdownReasons } from "../lib/score";
 import { saveScan, getScan } from "../lib/history";
 import { getCachedProduct, cacheProduct } from "../lib/productCache";
 import { lookupProduct, validateNutrition, validateIngredients } from "../lib/openFoodFacts";
+import { validateIngredientResults, validateBrandProfile, validateAlternatives, assessDataQuality } from "../lib/validate";
 
 export const useScanStore = create((set) => ({
   // State
@@ -20,6 +21,7 @@ export const useScanStore = create((set) => ({
   breakdown: null,
   breakdownReasons: null,
   groundingSources: [],
+  dataQuality: null,
   alternatives: [],
 
   reset: () =>
@@ -37,6 +39,7 @@ export const useScanStore = create((set) => ({
       breakdown: null,
       breakdownReasons: null,
       groundingSources: [],
+      dataQuality: null,
       alternatives: [],
     }),
 
@@ -58,6 +61,7 @@ export const useScanStore = create((set) => ({
       breakdown,
       breakdownReasons: scan.breakdownReasons || buildBreakdownReasons({ ingredientResults, brandProfile, breakdown }),
       groundingSources: scan.groundingSources || [],
+      dataQuality: scan.dataQuality || assessDataQuality(ingredientResults, brandProfile),
       alternatives: scan.alternatives || [],
     });
   },
@@ -75,7 +79,7 @@ export const useScanStore = create((set) => ({
       // Step 2: Check shared cache for this product
       const cached = await getCachedProduct(product.product_name, product.brand);
 
-      let brandProfile, ingredientResults, alternatives, breakdown, score, breakdownReasons;
+      let brandProfile, ingredientResults, alternatives, breakdown, score, breakdownReasons, dataQuality;
       let groundingSources = [];
       let nutritionSource = "gemini";
       const allWarnings = [];
@@ -91,25 +95,21 @@ export const useScanStore = create((set) => ({
         nutritionSource = cached.nutritionSource || "cached";
         breakdownReasons = cached.breakdownReasons || buildBreakdownReasons({ ingredientResults, brandProfile, breakdown });
         groundingSources = cached.groundingSources || [];
+        dataQuality = cached.dataQuality || assessDataQuality(ingredientResults, brandProfile);
 
         set({
           brandProfile, ingredientResults, alternatives, score, breakdown, breakdownReasons,
-          groundingSources, nutritionFacts, nutritionSource, validationWarnings: [],
+          groundingSources, dataQuality, nutritionFacts, nutritionSource, validationWarnings: [],
           status: "done",
         });
       } else {
         // Step 3: Fresh analysis via Gemini
         const analysis = await analyzeProduct(product.brand, product.ingredients);
 
-        brandProfile = analysis.brand_profile || {
-          certifications: [],
-          carbonReport: false,
-          laborPractices: "Unknown",
-          overallEthicsScore: 50,
-        };
-
-        ingredientResults = analysis.ingredients || [];
-        alternatives = analysis.alternatives || [];
+        // Validate all Gemini results before using them
+        brandProfile = validateBrandProfile(analysis.brand_profile);
+        ingredientResults = validateIngredientResults(analysis.ingredients);
+        alternatives = validateAlternatives(analysis.alternatives);
         groundingSources = analysis._groundingSources || [];
 
         set({ brandProfile, ingredientResults, alternatives, groundingSources });
@@ -140,18 +140,48 @@ export const useScanStore = create((set) => ({
         }
         set({ validationWarnings: allWarnings });
 
-        // Step 5: Compute score
-        const safeCount = ingredientResults.filter((i) => i.flag === "safe").length;
-        const totalIngredients = ingredientResults.length || 1;
-        const avgIngredientScore =
-          ingredientResults.reduce((sum, i) => sum + (i.score || 50), 0) / totalIngredients;
+        // Step 5: Compute score — exclude low-confidence categories
+        const totalIngredients = ingredientResults.length || 0;
+        const highConfIngredients = ingredientResults.filter((i) => i.confidence !== "low");
+        const lowConfRatio = totalIngredients > 0
+          ? ingredientResults.filter((i) => i.confidence === "low").length / totalIngredients
+          : 1;
+
+        // Ingredient safety: exclude if most ingredients are low confidence
+        let ingredientSafetyScore = null;
+        if (highConfIngredients.length > 0 && lowConfRatio <= 0.5) {
+          const avgScore = highConfIngredients.reduce((sum, i) => sum + (i.score || 50), 0) / highConfIngredients.length;
+          ingredientSafetyScore = Math.round(avgScore);
+        }
+
+        // Environmental impact: derived from ingredients, exclude if ingredients are unreliable
+        let envScore = null;
+        if (ingredientSafetyScore != null) {
+          const safeCount = highConfIngredients.filter((i) => i.flag === "safe").length;
+          envScore = Math.round((safeCount / highConfIngredients.length) * 70 + 15);
+        }
+
+        // Brand ethics: exclude if low confidence
+        const brandEthicsScore = brandProfile.confidence !== "low"
+          ? (brandProfile.overallEthicsScore || 50)
+          : null;
+
+        // Health impact: derived from ingredients
+        const healthScore = ingredientSafetyScore != null
+          ? Math.round(ingredientSafetyScore * 0.9 + 10)
+          : null;
+
+        // Packaging: exclude if brand data is low confidence (carbon report unknown)
+        const packagingScore = brandProfile.confidence !== "low"
+          ? (brandProfile.carbonReport ? 65 : 40)
+          : null;
 
         breakdown = {
-          ingredient_safety: Math.round(avgIngredientScore),
-          environmental_impact: Math.round((safeCount / totalIngredients) * 70 + 15),
-          brand_ethics: brandProfile.overallEthicsScore || 50,
-          health_impact: Math.round(avgIngredientScore * 0.9 + 10),
-          packaging: brandProfile.carbonReport ? 65 : 40,
+          ingredient_safety: ingredientSafetyScore,
+          environmental_impact: envScore,
+          brand_ethics: brandEthicsScore,
+          health_impact: healthScore,
+          packaging: packagingScore,
         };
 
         score = computeScore({
@@ -164,15 +194,20 @@ export const useScanStore = create((set) => ({
 
         breakdownReasons = buildBreakdownReasons({ ingredientResults, brandProfile, breakdown });
 
-        set({ score, breakdown, breakdownReasons, status: "done" });
+        // Step 6: Assess data quality
+        const dataQuality = assessDataQuality(ingredientResults, brandProfile);
+        console.log("[EcoScan] Data quality:", dataQuality);
 
-        // Step 6: Save to shared cache so other clients get the same score
+        set({ score, breakdown, breakdownReasons, dataQuality, status: "done" });
+
+        // Step 7: Save to shared cache so other clients get the same score
         await cacheProduct(product.product_name, product.brand, {
           score,
           score_tier: score >= 80 ? "excellent" : score >= 50 ? "moderate" : "poor",
           breakdown,
           breakdownReasons,
           groundingSources,
+          dataQuality,
           nutritionFacts,
           nutritionSource,
           ingredientResults,
@@ -181,7 +216,7 @@ export const useScanStore = create((set) => ({
         });
       }
 
-      // Step 7: Save to local history
+      // Step 8: Save to local history
       saveScan({
         product_name: product.product_name,
         brand: product.brand,
@@ -191,6 +226,7 @@ export const useScanStore = create((set) => ({
         breakdown,
         breakdownReasons,
         groundingSources,
+        dataQuality,
         nutritionFacts,
         nutritionSource,
         ingredientResults,

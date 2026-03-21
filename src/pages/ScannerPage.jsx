@@ -7,6 +7,7 @@ import BrandProfile from "../components/BrandProfile";
 import AlternativesList from "../components/AlternativesList";
 import NutritionFacts from "../components/NutritionFacts";
 import SourcesList from "../components/SourcesList";
+import DataQualityBanner from "../components/DataQualityBanner";
 
 export default function ScannerPage() {
   const fileInputRef = useRef(null);
@@ -23,7 +24,7 @@ export default function ScannerPage() {
     }
   }, []);
 
-  const { status, error, product, nutritionFacts, nutritionSource, validationWarnings, ingredientResults, brandProfile, score, breakdown, breakdownReasons, groundingSources, alternatives, scan, reset } =
+  const { status, error, product, nutritionFacts, nutritionSource, validationWarnings, ingredientResults, brandProfile, score, breakdown, breakdownReasons, groundingSources, dataQuality, alternatives, scan, reset } =
     useScanStore();
 
   const handleFileSelect = useCallback(
@@ -107,6 +108,9 @@ export default function ScannerPage() {
           <ScoreRing score={score} />
         </div>
 
+        {/* Data quality banner */}
+        <DataQualityBanner dataQuality={dataQuality} />
+
         {/* Breakdown */}
         <div className="p-5 rounded-2xl bg-white shadow-sm">
           <BreakdownChart breakdown={breakdown} reasons={breakdownReasons} />
@@ -120,7 +124,7 @@ export default function ScannerPage() {
         {/* Nutrition Facts */}
         {nutritionFacts && (
           <div className="p-5 rounded-2xl bg-white shadow-sm">
-            <NutritionFacts nutrition={nutritionFacts} source={nutritionSource} warnings={validationWarnings} />
+            <NutritionFacts nutrition={nutritionFacts} source={nutritionSource} />
           </div>
         )}
 

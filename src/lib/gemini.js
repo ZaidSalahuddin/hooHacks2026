@@ -110,6 +110,8 @@ Respond with this exact JSON structure (all nutrition values must be numbers, no
 }
 
 CRITICAL RULES:
+- "product_name" must be the standard, canonical product name WITHOUT size, volume, quantity, or packaging info. For example use "Red Bull Energy Drink" not "Red Bull Energy Drink 8.4 fl oz" or "Red Bull Energy Drink Can"
+- "brand" must be ONLY the brand/company name, e.g. "Red Bull" not "Red Bull GmbH"
 - The "ingredients" array must NEVER be empty
 - The "nutrition_facts" object must ALWAYS include all fields shown above
 - All numeric values must be actual numbers (e.g. 0, not "0")
@@ -191,15 +193,33 @@ Provide a complete sustainability analysis. You MUST respond with ONLY a JSON ob
     "carbonReport": true or false,
     "laborPractices": "brief summary",
     "overallEthicsScore": number 0-100,
+    "confidence": "high" or "medium" or "low",
+    "confidence_reason": "brief explanation of why confidence is at this level",
     "source_urls": [{ "url": "https://...", "title": "Page title or description" }]
   },
   "ingredients": [
-    { "name": "ingredient name", "flag": "safe" or "moderate" or "harmful", "reason": "brief reason", "score": number 0-100, "source_url": "URL of the source used for this ingredient's safety assessment (e.g. EWG Skin Deep page, PubChem, FDA, WHO, etc.)", "source_name": "Short name of the source (e.g. EWG, FDA, WHO, PubChem)" }
+    { "name": "ingredient name", "flag": "safe" or "moderate" or "harmful", "reason": "brief reason", "score": integer from 0 to 100 (e.g. safe=85, moderate=50, harmful=15), "confidence": "high" or "medium" or "low", "source_url": "URL of the source used for this ingredient's safety assessment (e.g. EWG Skin Deep page, PubChem, FDA, WHO, etc.)", "source_name": "Short name of the source (e.g. EWG, FDA, WHO, PubChem)" }
   ],
   "alternatives": [
     { "name": "product name", "brand": "brand name", "score": number 0-100, "improvements": ["improvement1", "improvement2"], "source_url": "URL where this alternative was found" }
   ]
 }
+
+SCORING RULES — scores MUST be integers on a 0-100 scale. NOT 0-1. NOT decimals:
+- A safe ingredient with no concerns should score 80-100 (e.g. "Water" = 95, "Citric Acid" = 85)
+- A moderate ingredient should score 40-79 (e.g. "Artificial Flavor" = 55, "Sodium Benzoate" = 45)
+- A harmful ingredient should score 0-39 (e.g. "High Fructose Corn Syrup" = 25, "BHA" = 15)
+- NEVER use 0 or 1 as a score for a safe ingredient. Safe = high score (80+).
+- NEVER use a decimal like 0.85. Use 85 instead.
+- overallEthicsScore must also be 0-100 integer.
+- All alternative product scores must be 0-100 integers.
+
+CONFIDENCE RULES — this is critical for data quality:
+- "high": You found specific, authoritative data from a reliable source (EWG, FDA, peer-reviewed study, official brand page). You MUST have a valid source_url.
+- "medium": You found some relevant information but it's not from a primary source, or the data is partially inferred.
+- "low": You could NOT find reliable data and are estimating. Be honest — a "low" confidence rating is better than a fabricated "high" one.
+- If confidence is "low", set the score to 50 (neutral) rather than guessing. Do NOT invent scores when you lack data.
+- brand_profile.confidence should be "low" if you could not find the brand's sustainability practices online.
 
 For brand_profile, include "source_urls" — an array of the web pages you used to assess the brand's ethics, certifications, and practices.
 For each ingredient, you MUST include a "source_url" linking to the actual webpage you used for the safety assessment (e.g. https://www.ewg.org/skindeep/ingredients/..., https://pubchem.ncbi.nlm.nih.gov/compound/..., https://www.fda.gov/..., etc.) and a short "source_name" (e.g. "EWG", "PubChem", "FDA").

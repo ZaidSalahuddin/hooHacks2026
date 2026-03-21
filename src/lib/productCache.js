@@ -9,13 +9,45 @@ import {
 const COLLECTION = "product_scans";
 
 /**
+ * Normalize a product name or brand to a stable, canonical form.
+ * Strips volume/size info, punctuation, trademark symbols, extra whitespace,
+ * so "Red Bull Energy Drink 8.4 fl oz (250ml)" → "red bull energy drink".
+ */
+function normalize(str) {
+  return (str || "")
+    .toLowerCase()
+    // Remove trademark/copyright symbols
+    .replace(/[®™©]/g, "")
+    // Remove size/volume patterns: "8.4 fl oz", "250ml", "12oz", "1.5L", "16.9 fluid ounces", "330 ml", "2 liter"
+    .replace(/\d+\.?\d*\s*(fl\.?\s*oz|oz|ml|l|cl|liters?|gallons?|pints?|quarts?|g|kg|lb|lbs)\b/gi, "")
+    // Remove parenthetical content like "(250ml)" or "(pack of 12)"
+    .replace(/\(.*?\)/g, "")
+    // Remove common size/count descriptors
+    .replace(/\b(single|pack|can|bottle|box|count|ct|pk)\b/gi, "")
+    // Remove punctuation except hyphens within words
+    .replace(/[^a-z0-9\s-]/g, "")
+    // Collapse whitespace
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+/**
  * Generate a consistent key from product name + brand.
- * Lowercased and trimmed so "Red Bull" from any client matches.
+ * Aggressively normalizes so the same product always matches
+ * regardless of how Gemini phrases the name.
  */
 function productKey(productName, brand) {
-  const raw = `${productName}::${brand}`.toLowerCase().trim();
+  const normName = normalize(productName);
+  const normBrand = normalize(brand);
+
+  // Remove brand from product name if it's redundant (e.g. "Red Bull Red Bull Energy Drink")
+  const nameWithoutBrand = normBrand
+    ? normName.replace(new RegExp(`\\b${normBrand.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\b`, "g"), "").replace(/\s+/g, " ").trim()
+    : normName;
+
+  const key = `${normBrand}::${nameWithoutBrand || normName}`;
   // Replace characters not allowed in Firestore doc IDs
-  return raw.replace(/[/\\]/g, "_");
+  return key.replace(/[/\\]/g, "_");
 }
 
 /**
