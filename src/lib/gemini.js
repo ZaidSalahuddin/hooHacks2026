@@ -1,4 +1,13 @@
 import { GoogleGenerativeAI } from "@google/generative-ai";
+import {
+  extractJSON,
+  normalizeAnalysisResult,
+  normalizeBrandDetectionResult,
+  normalizeBrandValidationResult,
+  normalizeIngredientDetectionResult,
+  normalizeIngredientValidationResult,
+  normalizeProductCandidatesResult,
+} from "./geminiUtils";
 
 const genAI = new GoogleGenerativeAI(import.meta.env.VITE_GEMINI_API_KEY);
 
@@ -12,84 +21,204 @@ const searchModel = genAI.getGenerativeModel({
   tools: [{ googleSearch: {} }],
 });
 
-function extractJSON(text) {
-  // Strip markdown code fences
-  let cleaned = text.replace(/```(?:json)?\s*/gi, "").replace(/```\s*/g, "").trim();
+function getUserFacingVisionError(fallbackMessage) {
+  return new Error(fallbackMessage);
+}
 
-  // Try parsing directly
+async function runVisionJSON(promptParts, fallbackMessage) {
   try {
-    return JSON.parse(cleaned);
+    const result = await visionModel.generateContent(promptParts);
+    return extractJSON(result.response.text());
   } catch {
-    // Fall back: find the first { or [ and match to its closing bracket
-    const startObj = cleaned.indexOf("{");
-    const startArr = cleaned.indexOf("[");
-    let start = -1;
-    let open, close;
-
-    if (startObj === -1 && startArr === -1) throw new Error("No JSON found in response");
-
-    if (startArr === -1 || (startObj !== -1 && startObj < startArr)) {
-      start = startObj;
-      open = "{";
-      close = "}";
-    } else {
-      start = startArr;
-      open = "[";
-      close = "]";
-    }
-
-    let depth = 0;
-    let inString = false;
-    let escaped = false;
-
-    for (let i = start; i < cleaned.length; i++) {
-      const ch = cleaned[i];
-      if (escaped) { escaped = false; continue; }
-      if (ch === "\\") { escaped = true; continue; }
-      if (ch === '"') { inString = !inString; continue; }
-      if (inString) continue;
-      if (ch === open) depth++;
-      if (ch === close) depth--;
-      if (depth === 0) {
-        return JSON.parse(cleaned.slice(start, i + 1));
-      }
-    }
-
-    throw new Error("Could not parse JSON from response");
+    throw getUserFacingVisionError(fallbackMessage);
   }
 }
 
-export async function analyzeProductImage(imageBase64, mimeType = "image/jpeg") {
-  const prompt = `You are a sustainability and ingredient analysis assistant.
+export async function identifyDistinctProducts(imageBase64, mimeType = "image/jpeg") {
+  const prompt = `You are a product identification agent.
 
-Given the product image provided:
-1. Identify the product name and brand
-2. Extract the complete ingredients list exactly as printed
+Look at this image and determine how many visually distinctive packaged consumer products are present.
 
-Respond with this JSON schema:
+Respond with ONLY this JSON object:
 {
-  "product_name": "string",
-  "brand": "string",
-  "ingredients": ["string"]
+  "product_count": number,
+  "products": [
+    {
+      "product_name": "string",
+      "distinctive_features": ["feature1", "feature2"],
+      "confidence": number 0-100
+    }
+  ]
 }`;
 
-  const result = await visionModel.generateContent([
-    prompt,
-    {
-      inlineData: {
-        mimeType,
-        data: imageBase64,
-      },
-    },
-  ]);
+  try {
+    const data = await runVisionJSON(
+      [
+        prompt,
+        {
+          inlineData: {
+            mimeType,
+            data: imageBase64,
+          },
+        },
+      ],
+      "We could not clearly identify the product in this image. Please retake the photo with one product centered in frame."
+    );
 
-  return extractJSON(result.response.text());
+    return normalizeProductCandidatesResult(data);
+  } catch {
+    throw new Error("We could not clearly identify the product in this image. Please retake the photo with one product centered in frame.");
+  }
+}
+
+export async function identifyBrands(imageBase64, mimeType = "image/jpeg") {
+  const prompt = `You are a brand identification agent.
+
+Read the packaging in this image and identify the visible product brand names.
+
+Respond with ONLY this JSON object:
+{
+  "brands": [
+    {
+      "brand": "string",
+      "confidence": number 0-100,
+      "evidence": "brief explanation"
+    }
+  ]
+}`;
+
+  try {
+    const data = await runVisionJSON(
+      [
+        prompt,
+        {
+          inlineData: {
+            mimeType,
+            data: imageBase64,
+          },
+        },
+      ],
+      "We could not clearly identify the brand from this image. Please retake the photo with the front label visible."
+    );
+
+    return normalizeBrandDetectionResult(data);
+  } catch {
+    throw new Error("We could not clearly identify the brand from this image. Please retake the photo with the front label visible.");
+  }
+}
+
+export async function identifyIngredients(imageBase64, mimeType = "image/jpeg") {
+  const prompt = `You are an ingredient extraction agent.
+
+Read the ingredient list exactly as printed on the product image.
+
+Respond with ONLY this JSON object:
+{
+  "ingredients": ["ingredient 1", "ingredient 2"],
+  "confidence": number 0-100,
+  "readability": "clear" or "partial" or "unreadable"
+}`;
+
+  try {
+    const data = await runVisionJSON(
+      [
+        prompt,
+        {
+          inlineData: {
+            mimeType,
+            data: imageBase64,
+          },
+        },
+      ],
+      "We could not read the ingredient list from this image. Please retake the photo with the ingredients panel clearly visible."
+    );
+
+    return normalizeIngredientDetectionResult(data);
+  } catch {
+    throw new Error("We could not read the ingredient list from this image. Please retake the photo with the ingredients panel clearly visible.");
+  }
+}
+
+export async function validateBrand(product, imageBase64, mimeType = "image/jpeg") {
+  const prompt = `You are a brand validation agent.
+
+Validate whether the proposed brand and product name match the packaging shown in the image.
+
+Reject vague, generic, or mismatched brand identifications.
+
+Respond with ONLY this JSON object:
+{
+  "valid": true or false,
+  "confidence": number 0-100,
+  "reason": "brief user-facing reason",
+  "issues": ["issue1", "issue2"],
+  "normalized_brand": "string",
+  "normalized_product_name": "string"
+}`;
+
+  try {
+    const data = await runVisionJSON(
+      [
+        prompt,
+        `Candidate product JSON: ${JSON.stringify(product)}`,
+        {
+          inlineData: {
+            mimeType,
+            data: imageBase64,
+          },
+        },
+      ],
+      "We could not verify the product brand from this image. Please retake the photo with the label clearly visible."
+    );
+
+    return normalizeBrandValidationResult(data);
+  } catch {
+    throw new Error("We could not verify the product brand from this image. Please retake the photo with the label clearly visible.");
+  }
+}
+
+export async function validateIngredients(product, imageBase64, mimeType = "image/jpeg") {
+  const prompt = `You are an ingredient validation agent.
+
+Validate whether the extracted ingredient list is readable, plausible, and matches the product image.
+
+Reject ingredient lists that are missing, too short to be useful, clearly malformed, or unrelated to the packaging.
+
+Respond with ONLY this JSON object:
+{
+  "valid": true or false,
+  "confidence": number 0-100,
+  "reason": "brief user-facing reason",
+  "issues": ["issue1", "issue2"],
+  "normalized_ingredients": ["ingredient 1", "ingredient 2"]
+}`;
+
+  try {
+    const data = await runVisionJSON(
+      [
+        prompt,
+        `Candidate product JSON: ${JSON.stringify(product)}`,
+        {
+          inlineData: {
+            mimeType,
+            data: imageBase64,
+          },
+        },
+      ],
+      "We could not verify the ingredient list from this image. Please retake the photo with the ingredients panel clearly visible."
+    );
+
+    return normalizeIngredientValidationResult(data);
+  } catch {
+    throw new Error("We could not verify the ingredient list from this image. Please retake the photo with the ingredients panel clearly visible.");
+  }
 }
 
 export async function analyzeProduct(brand, ingredients) {
-  const ingredientList = ingredients.slice(0, 15).join(", ");
+  const safeIngredients = Array.isArray(ingredients) ? ingredients : [];
+  const ingredientList = safeIngredients.join(", ");
 
-  const prompt = `You are a sustainability analysis assistant. Analyze the following product data using web search.
+  const prompt = `You are a sustainability scoring agent. Analyze the following product data using web search.
 
 Brand: "${brand}"
 Ingredients: ${ingredientList}
@@ -114,6 +243,10 @@ For each ingredient, assess EWG safety rating, health effects, allergen status, 
 For alternatives, suggest 3-5 more sustainable products.
 Include ALL ingredients listed above in the ingredients array.`;
 
-  const result = await searchModel.generateContent(prompt);
-  return extractJSON(result.response.text());
+  try {
+    const result = await searchModel.generateContent(prompt);
+    return normalizeAnalysisResult(extractJSON(result.response.text()));
+  } catch {
+    throw new Error("We could not finish the sustainability analysis. Please try again.");
+  }
 }
