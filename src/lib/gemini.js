@@ -60,26 +60,60 @@ function extractJSON(text) {
 }
 
 export async function analyzeProductImage(imageBase64, mimeType = "image/jpeg") {
-  const prompt = `You are a sustainability and ingredient analysis assistant.
+  const prompt = `You are a product label analysis assistant. Carefully examine every part of this product image.
 
-Given the image provided, first determine if it contains a recognizable consumer product (e.g. food, drink, cosmetic, cleaning product, supplement, etc.).
+STEP 1: Is there a recognizable consumer product in the image?
+If NO, respond ONLY with: { "product_found": false }
 
-If NO product is visible in the image, respond with:
-{
-  "product_found": false
-}
+STEP 2: If YES, extract ALL of the following. Look very carefully at the label text.
 
-If a product IS visible:
-1. Identify the product name and brand
-2. Extract the complete ingredients list exactly as printed
+PRODUCT INFO:
+- Product name and brand
 
-Respond with:
+INGREDIENTS LIST:
+- Read the ingredients list from the label word by word
+- If the ingredients are not visible in the image, use your knowledge of this specific product to provide the known ingredients
+- The ingredients array must NOT be empty — every product has ingredients
+
+NUTRITION FACTS:
+- Read every line of the Nutrition Facts panel on the label
+- If the Nutrition Facts panel is not visible, use your knowledge of this specific product to provide the standard nutrition facts
+- You MUST include ALL standard nutrients: serving size, calories, total fat, saturated fat, trans fat, cholesterol, sodium, total carbohydrates, dietary fiber, total sugars, added sugars, and protein
+- Also include any vitamins and minerals listed
+
+Respond with this exact JSON structure (all nutrition values must be numbers, not strings):
 {
   "product_found": true,
-  "product_name": "string",
-  "brand": "string",
-  "ingredients": ["string"]
-}`;
+  "product_name": "Product Name",
+  "brand": "Brand Name",
+  "ingredients": ["ingredient1", "ingredient2", "ingredient3"],
+  "nutrition_facts": {
+    "serving_size": "8.4 fl oz (250ml)",
+    "calories": 110,
+    "total_fat_g": 0,
+    "saturated_fat_g": 0,
+    "trans_fat_g": 0,
+    "cholesterol_mg": 0,
+    "sodium_mg": 105,
+    "total_carbohydrates_g": 28,
+    "dietary_fiber_g": 0,
+    "total_sugars_g": 27,
+    "added_sugars_g": 27,
+    "protein_g": 0,
+    "vitamins_minerals": [
+      { "name": "Niacin", "daily_value_percent": 160 },
+      { "name": "Vitamin B6", "daily_value_percent": 360 },
+      { "name": "Vitamin B12", "daily_value_percent": 130 },
+      { "name": "Pantothenic Acid", "daily_value_percent": 50 }
+    ]
+  }
+}
+
+CRITICAL RULES:
+- The "ingredients" array must NEVER be empty
+- The "nutrition_facts" object must ALWAYS include all fields shown above
+- All numeric values must be actual numbers (e.g. 0, not "0")
+- If you cannot read a value from the image, use your knowledge of the product`;
 
   const result = await visionModel.generateContent([
     prompt,
@@ -117,7 +151,7 @@ Provide a complete sustainability analysis. You MUST respond with ONLY a JSON ob
     "overallEthicsScore": number 0-100
   },
   "ingredients": [
-    { "name": "ingredient name", "flag": "safe" or "moderate" or "harmful", "reason": "brief reason", "score": number 0-100 }
+    { "name": "ingredient name", "flag": "safe" or "moderate" or "harmful", "reason": "brief reason", "score": number 0-100, "source_url": "URL of the source used for this ingredient's safety assessment (e.g. EWG Skin Deep page, PubChem, FDA, WHO, etc.)", "source_name": "Short name of the source (e.g. EWG, FDA, WHO, PubChem)" }
   ],
   "alternatives": [
     { "name": "product name", "brand": "brand name", "score": number 0-100, "improvements": ["improvement1", "improvement2"] }
@@ -125,6 +159,7 @@ Provide a complete sustainability analysis. You MUST respond with ONLY a JSON ob
 }
 
 For each ingredient, assess EWG safety rating, health effects, allergen status, and environmental impact.
+For each ingredient, you MUST include a "source_url" linking to the actual webpage you used for the safety assessment (e.g. https://www.ewg.org/skindeep/ingredients/..., https://pubchem.ncbi.nlm.nih.gov/compound/..., https://www.fda.gov/..., etc.) and a short "source_name" (e.g. "EWG", "PubChem", "FDA").
 For alternatives, suggest 3-5 more sustainable products.
 Include ALL ingredients listed above in the ingredients array.`;
 
