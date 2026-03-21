@@ -2,23 +2,23 @@ import { useState } from "react";
 import { getFlagStyles } from "../lib/score";
 
 const FLAG_CONFIG = {
-  safe: { icon: "\u2705", border: "border-l-green-500", bg: "bg-green-50" },
-  moderate: { icon: "\u26A0\uFE0F", border: "border-l-yellow-500", bg: "bg-yellow-50" },
-  harmful: { icon: "\u274C", border: "border-l-red-500", bg: "bg-red-50" },
+  safe: { icon: "✅", border: "border-l-safe-500", bg: "bg-safe-50" },
+  moderate: { icon: "⚠️", border: "border-l-yellow-500", bg: "bg-yellow-50" },
+  harmful: { icon: "❌", border: "border-l-rust-500", bg: "bg-rust-50" },
 };
 
 const PILL_STYLES = {
   safe: {
-    active: "bg-green-600 text-white ring-2 ring-green-600 ring-offset-1",
-    inactive: "bg-green-100 text-green-800 hover:bg-green-200",
+    active: "bg-safe-600 text-white ring-2 ring-safe-600 ring-offset-1",
+    inactive: "bg-safe-100 text-safe-800 hover:bg-safe-200",
   },
   moderate: {
     active: "bg-yellow-500 text-white ring-2 ring-yellow-500 ring-offset-1",
     inactive: "bg-yellow-100 text-yellow-800 hover:bg-yellow-200",
   },
   harmful: {
-    active: "bg-red-600 text-white ring-2 ring-red-600 ring-offset-1",
-    inactive: "bg-red-100 text-red-800 hover:bg-red-200",
+    active: "bg-rust-600 text-white ring-2 ring-rust-600 ring-offset-1",
+    inactive: "bg-rust-100 text-rust-800 hover:bg-rust-200",
   },
 };
 
@@ -42,7 +42,7 @@ export default function IngredientList({ ingredients }) {
 
   return (
     <div className="space-y-3">
-      <h3 className="font-semibold text-lg text-green-900">Ingredient Analysis</h3>
+      <h3 className="font-display text-lg text-green-900">Ingredient Ledger</h3>
 
       {/* Clickable filter pills */}
       <div className="flex gap-2 flex-wrap">
@@ -114,7 +114,7 @@ export default function IngredientList({ ingredients }) {
                     href={ing.source_url}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="inline-flex items-center gap-1 text-xs text-green-500 hover:text-green-700 mt-1 transition-colors"
+                    className="inline-flex items-center gap-1 text-xs text-gold-600 hover:text-gold-800 mt-1 transition-colors"
                   >
                     <svg xmlns="http://www.w3.org/2000/svg" className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                       <path strokeLinecap="round" strokeLinejoin="round" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" />

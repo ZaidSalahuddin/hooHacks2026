@@ -1,30 +1,67 @@
 @import "tailwindcss";
 
 @theme {
-  --color-green-950: #0a1f0d;
-  --color-green-900: #14331a;
-  --color-green-800: #1e4d27;
-  --color-green-700: #2d6a3a;
-  --color-green-600: #3d8b4e;
-  --color-green-500: #4caf62;
-  --color-green-400: #72c784;
-  --color-green-300: #a3ddb0;
-  --color-green-200: #ccefd3;
-  --color-green-100: #e8f8eb;
-  --color-green-50: #f3fcf5;
+  /* ── Structural leather/brown palette (replaces green-* throughout UI) ── */
+  --color-green-950: #1E0F06;
+  --color-green-900: #2E1A0A;
+  --color-green-800: #4A2E14;
+  --color-green-700: #6B4424;
+  --color-green-600: #8A6238;
+  --color-green-500: #A67C50;
+  --color-green-400: #C4A06C;
+  --color-green-300: #D8BC98;
+  --color-green-200: #EAD8B8;
+  --color-green-100: #F5ECD8;
+  --color-green-50:  #FAF5EC;
 
-  --color-terra-700: #8b3a1a;
-  --color-terra-600: #b34e24;
-  --color-terra-500: #d4663a;
-  --color-terra-400: #e08a64;
-  --color-terra-300: #ecb09a;
+  /* ── Parchment/sandstone ── */
+  --color-cream-50:  #FDF8EE;
+  --color-cream-100: #F8F0E0;
+  --color-cream-200: #EDDFC8;
+  --color-cream-300: #DECCAA;
 
-  --color-cream-50: #fefdfb;
-  --color-cream-100: #faf8f4;
-  --color-cream-200: #f0ece4;
-  --color-cream-300: #e0d9cc;
+  /* ── Muted gold — excellent tier & accent ── */
+  --color-gold-900: #3D2A00;
+  --color-gold-800: #5C4000;
+  --color-gold-700: #7A5500;
+  --color-gold-600: #9A6E00;
+  --color-gold-500: #BA8A00;
+  --color-gold-400: #D4A820;
+  --color-gold-300: #E8C460;
+  --color-gold-200: #F2DA98;
+  --color-gold-100: #F8EDCC;
+  --color-gold-50:  #FDFAE8;
 
-  --font-display: 'Playfair Display', serif;
+  /* ── Rust/faded red — poor tier, harmful, accents ── */
+  --color-rust-900: #4A1008;
+  --color-rust-800: #6B1A10;
+  --color-rust-700: #8B2418;
+  --color-rust-600: #A83020;
+  --color-rust-500: #C44230;
+  --color-rust-400: #D86850;
+  --color-rust-300: #E89A80;
+  --color-rust-200: #F2C4B0;
+  --color-rust-100: #F8E4D8;
+  --color-rust-50:  #FDF3EE;
+
+  /* ── Safe green — ingredient safety indicators only ── */
+  --color-safe-800: #14532d;
+  --color-safe-700: #15803d;
+  --color-safe-600: #16a34a;
+  --color-safe-500: #22c55e;
+  --color-safe-200: #bbf7d0;
+  --color-safe-100: #dcfce7;
+  --color-safe-50:  #f0fdf4;
+
+  /* ── Terra — moderate / warning tier ── */
+  --color-terra-700: #7A1F10;
+  --color-terra-600: #A02A18;
+  --color-terra-500: #C0432A;
+  --color-terra-400: #D46B4A;
+  --color-terra-300: #E8987A;
+
+  /* ── Typography ── */
+  --font-display: 'Rye', serif;
   --font-body: 'DM Sans', sans-serif;
 }
 

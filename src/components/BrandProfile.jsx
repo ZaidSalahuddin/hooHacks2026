@@ -11,14 +11,14 @@ export default function BrandProfile({ profile, brand }) {
 
   return (
     <div className="space-y-3">
-      <h3 className="font-semibold text-lg text-green-900">Brand Profile: {brand}</h3>
+      <h3 className="font-display text-lg text-green-900">Marshal's Report: {brand}</h3>
 
       <div className="flex flex-wrap gap-2">
         {profile.certifications && profile.certifications.length > 0 ? (
           profile.certifications.map((cert, i) => (
             <span
               key={i}
-              className="px-3 py-1 rounded-full bg-green-100 text-green-800 text-sm font-medium"
+              className="px-3 py-1 rounded-full bg-gold-100 text-gold-800 text-sm font-medium border border-gold-300"
             >
               {CERT_LABELS[cert] || cert}
             </span>

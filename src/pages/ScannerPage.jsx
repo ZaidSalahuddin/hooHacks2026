@@ -90,7 +90,7 @@ export default function ScannerPage() {
           onClick={handleNewScan}
           className="text-green-700 font-medium hover:text-green-900 transition-colors"
         >
-          &larr; New Scan
+          &larr; New Bounty
         </button>
 
         {/* Product header */}
@@ -141,7 +141,7 @@ export default function ScannerPage() {
     <div className="max-w-lg mx-auto px-4 py-6 pb-24 flex flex-col items-center gap-6">
       <div className="text-center">
         <h1 className="font-display text-3xl font-bold text-green-900">EcoScan</h1>
-        <p className="text-green-600 mt-1">Scan a product to check its sustainability</p>
+        <p className="text-green-600 mt-1">Draw your product — get the full bounty report</p>
       </div>
 
       {/* Camera or preview */}
@@ -170,7 +170,7 @@ export default function ScannerPage() {
           <div className="absolute inset-0 bg-green-950/60 flex flex-col items-center justify-center text-white">
             <div className="w-10 h-10 border-4 border-white/30 border-t-white rounded-full animate-spin mb-3" />
             <p className="font-medium">
-              {status === "scanning" ? "Scanning product..." : "Analyzing sustainability..."}
+              {status === "scanning" ? "Tracking down the product..." : "Reading the trail..."}
             </p>
           </div>
         )}
@@ -179,7 +179,7 @@ export default function ScannerPage() {
       {/* Error */}
       {status === "error" && (
         <div className="w-full p-4 rounded-xl bg-red-50 text-red-800 text-sm">
-          <p className="font-medium">Scan failed</p>
+          <p className="font-medium">Trail went cold</p>
           <p>{error}</p>
         </div>
       )}
