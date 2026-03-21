@@ -21,8 +21,7 @@ export default function ScannerPage() {
     }
   }, []);
 
-  const { status, error, product, ingredientResults, brandProfile, score, breakdown, alternatives, scan, reset } =
-    useScanStore();
+  const { status, error, scanResults, scan, reset } = useScanStore();
 
   const handleFileSelect = useCallback(
     (e) => {
@@ -82,7 +81,7 @@ export default function ScannerPage() {
   }, [reset]);
 
   // Results view
-  if (status === "done" && score !== null) {
+  if (status === "done" && scanResults.length > 0) {
     return (
       <div className="max-w-lg mx-auto px-4 py-6 pb-24 space-y-6">
         <button
@@ -92,38 +91,52 @@ export default function ScannerPage() {
           &larr; New Scan
         </button>
 
-        {/* Product header */}
-        <div className="text-center">
-          <h2 className="font-display text-2xl font-bold text-green-900">
-            {product?.product_name}
-          </h2>
-          <p className="text-green-600">{product?.brand}</p>
-        </div>
+        {scanResults.length > 1 && (
+          <p className="text-center text-sm text-green-600 font-medium">
+            {scanResults.length} products detected
+          </p>
+        )}
 
-        {/* Score ring */}
-        <div className="flex justify-center">
-          <ScoreRing score={score} />
-        </div>
+        {scanResults.map((result, index) => (
+          <div key={index} className="space-y-4">
+            {/* Product header */}
+            <div className="text-center">
+              <h2 className="font-display text-2xl font-bold text-green-900">
+                {result.product?.product_name}
+              </h2>
+              <p className="text-green-600">{result.product?.brand}</p>
+            </div>
 
-        {/* Breakdown */}
-        <div className="p-5 rounded-2xl bg-white shadow-sm">
-          <BreakdownChart breakdown={breakdown} />
-        </div>
+            {/* Score ring */}
+            <div className="flex justify-center">
+              <ScoreRing score={result.score} />
+            </div>
 
-        {/* Ingredients */}
-        <div className="p-5 rounded-2xl bg-white shadow-sm">
-          <IngredientList ingredients={ingredientResults} />
-        </div>
+            {/* Breakdown */}
+            <div className="p-5 rounded-2xl bg-white shadow-sm">
+              <BreakdownChart breakdown={result.breakdown} />
+            </div>
 
-        {/* Brand profile */}
-        <div className="p-5 rounded-2xl bg-white shadow-sm">
-          <BrandProfile profile={brandProfile} brand={product?.brand} />
-        </div>
+            {/* Ingredients */}
+            <div className="p-5 rounded-2xl bg-white shadow-sm">
+              <IngredientList ingredients={result.ingredientResults} />
+            </div>
 
-        {/* Alternatives */}
-        <div className="p-5 rounded-2xl bg-white shadow-sm">
-          <AlternativesList alternatives={alternatives} currentScore={score} />
-        </div>
+            {/* Brand profile */}
+            <div className="p-5 rounded-2xl bg-white shadow-sm">
+              <BrandProfile profile={result.brandProfile} brand={result.product?.brand} />
+            </div>
+
+            {/* Alternatives */}
+            <div className="p-5 rounded-2xl bg-white shadow-sm">
+              <AlternativesList alternatives={result.alternatives} currentScore={result.score} />
+            </div>
+
+            {index < scanResults.length - 1 && (
+              <hr className="border-cream-300" />
+            )}
+          </div>
+        ))}
       </div>
     );
   }
@@ -213,16 +226,6 @@ export default function ScannerPage() {
         onChange={handleFileSelect}
       />
 
-      {/* Extracted product info while analyzing */}
-      {product && status === "analyzing" && (
-        <div className="w-full p-4 rounded-xl bg-white shadow-sm text-center">
-          <p className="font-semibold text-green-900">{product.product_name}</p>
-          <p className="text-sm text-green-600">{product.brand}</p>
-          <p className="text-xs text-green-400 mt-1">
-            {product.ingredients?.length || 0} ingredients found
-          </p>
-        </div>
-      )}
     </div>
   );
 }

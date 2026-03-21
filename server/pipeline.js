@@ -22,6 +22,13 @@ import {
   validateIngredientsAgent,
 } from './agents.js';
 
+const DEFAULT_BRAND_PROFILE = {
+  certifications: [],
+  carbonReport: false,
+  laborPractices: 'Unknown',
+  overallEthicsScore: 50,
+};
+
 function buildValidationError(reason, issues = []) {
   const issueText = issues.length > 0 ? ` Issues: ${issues.join('; ')}` : '';
   return new Error(`${reason}${issueText}`);
@@ -36,9 +43,22 @@ function log(phase, message, data) {
   console.log(`[Pipeline] ${phase}: ${message}${dataStr}`);
 }
 
-export async function runScanPipeline(imageBase64, mimeType = 'image/jpeg') {
-  log('Phase 1', 'Starting product count + classification (parallel)');
+function computeBreakdown(brandProfile, ingredientResults) {
+  const safeCount = ingredientResults.filter((i) => i.flag === 'safe').length;
+  const total = ingredientResults.length || 1;
+  const avgScore = ingredientResults.reduce((sum, i) => sum + (i.score || 50), 0) / total;
+  return {
+    ingredient_safety: Math.round(avgScore),
+    environmental_impact: Math.round((safeCount / total) * 70 + 15),
+    brand_ethics: brandProfile.overallEthicsScore || 50,
+    health_impact: Math.round(avgScore * 0.9 + 10),
+    packaging: brandProfile.carbonReport ? 65 : 40,
+  };
+}
 
+export async function runScanPipeline(imageBase64, mimeType = 'image/jpeg') {
+  // Phase 1: Product count validation + image classification (parallel)
+  log('Phase 1', 'Starting product count + classification (parallel)');
   const [productCountResult, classificationResult] = await Promise.all([
     runAgent(identifyDistinctProductsAgent, 'Analyze the provided image.', imageBase64, mimeType)
       .then((text) => parse(normalizeProductCandidatesResult, text))
@@ -56,14 +76,12 @@ export async function runScanPipeline(imageBase64, mimeType = 'image/jpeg') {
   }
 
   const { hasBrandLabel, hasIngredientList } = classificationResult;
-
   if (!hasBrandLabel && !hasIngredientList) {
     throw new Error('This image does not appear to show product packaging. Please retake with the product label visible.');
   }
 
+  // Phase 2: All brands + shared ingredient detection (parallel, routed by classification)
   log('Phase 2', `Starting brand ID (${hasBrandLabel}) + ingredient parsing (${hasIngredientList}) (parallel)`);
-
-  // Phase 2: Brand identification + ingredient parsing (parallel, routed by classification)
   const [brandDetection, ingredientDetection] = await Promise.all([
     hasBrandLabel
       ? runAgent(identifyBrandsAgent, 'Analyze the provided image.', imageBase64, mimeType)
@@ -77,51 +95,64 @@ export async function runScanPipeline(imageBase64, mimeType = 'image/jpeg') {
       : Promise.resolve({ ingredients: [], confidence: 0, readability: 'unreadable' }),
   ]);
 
-  const detectedBrand = brandDetection.brands[0]?.brand || '';
-  log('Phase 2', 'Done', { brand: detectedBrand, ingredientCount: ingredientDetection.ingredients.length, readability: ingredientDetection.readability });
+  // Take up to 3 detected brands for multi-product support
+  const detectedBrands = brandDetection.brands.slice(0, 3);
+  log('Phase 2', 'Done', { brands: detectedBrands.map((b) => b.brand), ingredientCount: ingredientDetection.ingredients.length });
 
-  if (!detectedBrand) {
+  if (detectedBrands.length === 0) {
     throw new Error('We could not identify a clear brand from this image. Please retake the photo with the front label visible.');
   }
 
-  const brandCandidate = {
-    product_name: '',
-    brand: detectedBrand,
-    ingredients: ingredientDetection.ingredients,
-  };
-
-  log('Phase 3', 'Starting brand validation + ingredient validation (parallel)');
-
-  // Phase 3: Brand validation + ingredient validation (parallel)
   const hasIngredients = ingredientDetection.ingredients.length > 0;
-  const [brandValidation, ingredientValidationResult] = await Promise.all([
-    runAgent(
-      validateBrandAgent,
-      `Candidate product JSON: ${JSON.stringify(brandCandidate)}`,
-      imageBase64,
-      mimeType
-    ).then((text) => parse(normalizeBrandValidationResult, text)),
+
+  // Phase 3: Validate all brands in parallel + validate ingredients once
+  log('Phase 3', `Validating ${detectedBrands.length} brand(s) + ingredients (parallel)`);
+  const brandCandidates = detectedBrands.map((b) => ({
+    product_name: '',
+    brand: b.brand,
+    ingredients: ingredientDetection.ingredients,
+  }));
+
+  const [brandValidations, ingredientValidationResult] = await Promise.all([
+    Promise.all(
+      brandCandidates.map((candidate) =>
+        runAgent(
+          validateBrandAgent,
+          `Candidate product JSON: ${JSON.stringify(candidate)}`,
+          imageBase64,
+          mimeType
+        ).then((text) => parse(normalizeBrandValidationResult, text))
+          .catch(() => ({ valid: false, confidence: 0, reason: 'Validation failed', issues: [], normalized_brand: candidate.brand, normalized_product_name: '' }))
+      )
+    ),
 
     hasIngredients
       ? runAgent(
           validateIngredientsAgent,
-          `Candidate product JSON: ${JSON.stringify(brandCandidate)}`,
+          `Candidate product JSON: ${JSON.stringify(brandCandidates[0])}`,
           imageBase64,
           mimeType
         ).then((text) => parse(normalizeIngredientValidationResult, text))
+          .catch(() => ({ valid: true, confidence: 0, reason: '', issues: [], normalized_ingredients: [] }))
       : Promise.resolve({ valid: true, confidence: 0, reason: 'No ingredients in image', issues: [], normalized_ingredients: [] }),
   ]);
 
-  log('Phase 3', 'Done', { brandValid: brandValidation.valid, ingredientValid: ingredientValidationResult.valid });
+  // Filter to only valid brands
+  const validatedBrands = detectedBrands
+    .map((b, i) => ({ brand: b, validation: brandValidations[i] }))
+    .filter((pair) => pair.validation.valid);
 
-  if (!brandValidation.valid) {
-    throw buildValidationError(
-      brandValidation.reason || 'The detected brand could not be validated.',
-      brandValidation.issues
-    );
+  log('Phase 3', 'Done', {
+    validBrands: validatedBrands.map((p) => p.validation.normalized_brand),
+    ingredientValid: ingredientValidationResult.valid,
+  });
+
+  if (validatedBrands.length === 0) {
+    const firstReason = brandValidations[0]?.reason || 'The detected brand could not be validated.';
+    throw buildValidationError(firstReason, brandValidations[0]?.issues || []);
   }
 
-  // Only fail on ingredient validation if we actually detected ingredients
+  // Only enforce ingredient validation failure if we actually detected ingredients
   if (hasIngredients && !ingredientValidationResult.valid) {
     throw buildValidationError(
       ingredientValidationResult.reason || 'The ingredient list could not be validated.',
@@ -129,71 +160,66 @@ export async function runScanPipeline(imageBase64, mimeType = 'image/jpeg') {
     );
   }
 
-  const fullyValidatedProduct = {
-    product_name: brandValidation.normalized_product_name || 'Unknown Product',
-    brand: brandValidation.normalized_brand || detectedBrand,
-    ingredients:
-      ingredientValidationResult.normalized_ingredients.length > 0
-        ? ingredientValidationResult.normalized_ingredients
-        : ingredientDetection.ingredients,
-  };
+  const finalIngredients =
+    ingredientValidationResult.normalized_ingredients.length > 0
+      ? ingredientValidationResult.normalized_ingredients
+      : ingredientDetection.ingredients;
 
-  log('Phase 4', `Starting brand research + ingredient analysis (parallel) — ${fullyValidatedProduct.ingredients.length} ingredients`);
+  // Phase 4: Research all brands in parallel + analyze shared ingredients once
+  log('Phase 4', `Researching ${validatedBrands.length} brand(s) + ingredient analysis (parallel)`);
+  const [brandProfiles, ingredientAnalysis] = await Promise.all([
+    Promise.all(
+      validatedBrands.map((pair) =>
+        runAgent(researchBrandAgent, `Research the brand: "${pair.validation.normalized_brand || pair.brand.brand}"`)
+          .then((text) => parse(normalizeBrandProfileResult, text))
+          .catch(() => ({ ...DEFAULT_BRAND_PROFILE }))
+      )
+    ),
 
-  // Phase 4: Brand research + ingredient analysis (parallel, no image needed)
-  const [brandProfile, ingredientAnalysis] = await Promise.all([
-    runAgent(researchBrandAgent, `Research the brand: "${fullyValidatedProduct.brand}"`)
-      .then((text) => parse(normalizeBrandProfileResult, text))
-      .catch(() => ({
-        certifications: [],
-        carbonReport: false,
-        laborPractices: 'Unknown',
-        overallEthicsScore: 50,
-      })),
-
-    fullyValidatedProduct.ingredients.length > 0
+    finalIngredients.length > 0
       ? runAgent(
           analyzeIngredientsAgent,
-          `Brand: "${fullyValidatedProduct.brand}"\nIngredients: ${fullyValidatedProduct.ingredients.join(', ')}`
+          `Brand: "${validatedBrands[0].validation.normalized_brand || validatedBrands[0].brand.brand}"\nIngredients: ${finalIngredients.join(', ')}`
         ).then((text) => parse(normalizeIngredientAnalysisResult, text))
+          .catch(() => ({ ingredients: [], alternatives: [] }))
       : Promise.resolve({ ingredients: [], alternatives: [] }),
   ]);
-
-  log('Phase 4', 'Done', { ethicsScore: brandProfile.overallEthicsScore, analyzedIngredients: ingredientAnalysis.ingredients.length });
 
   const ingredientResults = ingredientAnalysis.ingredients || [];
   const alternatives = ingredientAnalysis.alternatives || [];
 
-  // Phase 5: Score calculation
-  const safeCount = ingredientResults.filter((i) => i.flag === 'safe').length;
-  const totalIngredients = ingredientResults.length || 1;
-  const avgIngredientScore =
-    ingredientResults.reduce((sum, i) => sum + (i.score || 50), 0) / totalIngredients;
-
-  const breakdown = {
-    ingredient_safety: Math.round(avgIngredientScore),
-    environmental_impact: Math.round((safeCount / totalIngredients) * 70 + 15),
-    brand_ethics: brandProfile.overallEthicsScore || 50,
-    health_impact: Math.round(avgIngredientScore * 0.9 + 10),
-    packaging: brandProfile.carbonReport ? 65 : 40,
-  };
-
-  const score = computeScore({
-    ingredientSafety: breakdown.ingredient_safety,
-    environmentalImpact: breakdown.environmental_impact,
-    brandEthics: breakdown.brand_ethics,
-    healthImpact: breakdown.health_impact,
-    packaging: breakdown.packaging,
+  log('Phase 4', 'Done', {
+    brandProfiles: brandProfiles.map((p) => p.overallEthicsScore),
+    analyzedIngredients: ingredientResults.length,
   });
 
-  log('Phase 5', 'Score calculated', { score, breakdown });
+  // Phase 5: Score calculation for each validated product
+  const products = validatedBrands.map((pair, i) => {
+    const brandProfile = brandProfiles[i];
+    const breakdown = computeBreakdown(brandProfile, ingredientResults);
+    const score = computeScore({
+      ingredientSafety: breakdown.ingredient_safety,
+      environmentalImpact: breakdown.environmental_impact,
+      brandEthics: breakdown.brand_ethics,
+      healthImpact: breakdown.health_impact,
+      packaging: breakdown.packaging,
+    });
 
-  return {
-    product: fullyValidatedProduct,
-    brandProfile,
-    ingredientResults,
-    alternatives,
-    breakdown,
-    score,
-  };
+    log('Phase 5', `Score for ${pair.validation.normalized_brand || pair.brand.brand}`, { score, breakdown });
+
+    return {
+      product: {
+        product_name: pair.validation.normalized_product_name || 'Unknown Product',
+        brand: pair.validation.normalized_brand || pair.brand.brand,
+        ingredients: finalIngredients,
+      },
+      brandProfile,
+      ingredientResults,
+      alternatives,
+      breakdown,
+      score,
+    };
+  });
+
+  return { products };
 }

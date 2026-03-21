@@ -2,29 +2,13 @@ import { create } from "zustand";
 import { saveScan, getScan } from "../lib/history";
 
 export const useScanStore = create((set) => ({
-  // State
   status: "idle", // idle | scanning | analyzing | done | error
   error: null,
   imageData: null,
-  product: null,
-  ingredientResults: [],
-  brandProfile: null,
-  score: null,
-  breakdown: null,
-  alternatives: [],
+  scanResults: [], // array of { product, brandProfile, ingredientResults, alternatives, breakdown, score }
 
   reset: () =>
-    set({
-      status: "idle",
-      error: null,
-      imageData: null,
-      product: null,
-      ingredientResults: [],
-      brandProfile: null,
-      score: null,
-      breakdown: null,
-      alternatives: [],
-    }),
+    set({ status: "idle", error: null, imageData: null, scanResults: [] }),
 
   loadFromHistory: (id) => {
     const scan = getScan(id);
@@ -33,12 +17,16 @@ export const useScanStore = create((set) => ({
       status: "done",
       error: null,
       imageData: null,
-      product: { product_name: scan.product_name, brand: scan.brand, ingredients: [] },
-      ingredientResults: scan.ingredientResults || [],
-      brandProfile: scan.brandProfile || null,
-      score: scan.score,
-      breakdown: scan.breakdown,
-      alternatives: scan.alternatives || [],
+      scanResults: [
+        {
+          product: { product_name: scan.product_name, brand: scan.brand, ingredients: [] },
+          ingredientResults: scan.ingredientResults || [],
+          brandProfile: scan.brandProfile || null,
+          score: scan.score,
+          breakdown: scan.breakdown,
+          alternatives: scan.alternatives || [],
+        },
+      ],
     });
   },
 
@@ -47,33 +35,35 @@ export const useScanStore = create((set) => ({
 
     try {
       set({ status: "analyzing" });
-      const response = await fetch('/api/scan', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+      const response = await fetch("/api/scan", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ imageBase64, mimeType }),
       });
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({}));
-        throw new Error(errorData.error || 'Scan failed. Please try again.');
+        throw new Error(errorData.error || "Scan failed. Please try again.");
       }
-      const { product, brandProfile, ingredientResults, alternatives, breakdown, score } =
-        await response.json();
+      const { products } = await response.json();
 
-      set({ product, brandProfile, ingredientResults, alternatives, breakdown, score, status: "done" });
+      set({ scanResults: products, status: "done" });
 
-      // Step 4: Save to history
-      saveScan({
-        product_name: product.product_name,
-        brand: product.brand,
-        image_thumbnail: imageBase64.slice(0, 500),
-        score,
-        score_tier: score >= 80 ? "excellent" : score >= 50 ? "moderate" : "poor",
-        breakdown,
-        ingredientResults,
-        brandProfile,
-        flagged_ingredients: ingredientResults.filter((i) => i.flag !== "safe"),
-        alternatives,
-      });
+      // Save primary product to history
+      const primary = products[0];
+      if (primary) {
+        saveScan({
+          product_name: primary.product.product_name,
+          brand: primary.product.brand,
+          image_thumbnail: imageBase64.slice(0, 500),
+          score: primary.score,
+          score_tier: primary.score >= 80 ? "excellent" : primary.score >= 50 ? "moderate" : "poor",
+          breakdown: primary.breakdown,
+          ingredientResults: primary.ingredientResults,
+          brandProfile: primary.brandProfile,
+          flagged_ingredients: primary.ingredientResults.filter((i) => i.flag !== "safe"),
+          alternatives: primary.alternatives,
+        });
+      }
     } catch (err) {
       set({ status: "error", error: err.message || "Something went wrong" });
     }
