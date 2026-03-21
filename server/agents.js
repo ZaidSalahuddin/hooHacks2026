@@ -1,4 +1,4 @@
-import { LlmAgent } from '@google/adk';
+import { LlmAgent, GOOGLE_SEARCH } from '@google/adk';
 
 const MODEL = 'gemini-2.0-flash';
 
@@ -128,7 +128,7 @@ Respond with ONLY this JSON object:
   "laborPractices": "brief summary",
   "overallEthicsScore": number 0-100
 }`,
-  tools: [{ googleSearch: {} }],
+  tools: [GOOGLE_SEARCH],
 });
 
 export const analyzeIngredientsAgent = new LlmAgent({
@@ -148,5 +148,5 @@ Respond with ONLY this JSON object:
 
 For each ingredient, assess EWG safety rating, health effects, allergen status, and environmental impact.
 Include ALL ingredients listed. Suggest 3-5 more sustainable product alternatives.`,
-  tools: [{ googleSearch: {} }],
+  tools: [GOOGLE_SEARCH],
 });

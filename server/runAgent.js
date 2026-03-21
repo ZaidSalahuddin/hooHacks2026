@@ -1,4 +1,4 @@
-import { InMemorySessionService, Runner } from '@google/adk';
+import { InMemorySessionService, Runner, isFinalResponse } from '@google/adk';
 import { randomUUID } from 'crypto';
 
 const APP_NAME = 'ecoscan';
@@ -21,7 +21,7 @@ export async function runAgent(agent, promptText, imageBase64 = null, mimeType =
 
   let finalText = '';
   for await (const event of runner.runAsync({ userId, sessionId, newMessage })) {
-    if (event.isFinalResponse?.()) {
+    if (isFinalResponse(event)) {
       finalText = event.content?.parts?.[0]?.text ?? '';
     }
   }
