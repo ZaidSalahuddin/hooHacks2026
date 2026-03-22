@@ -9,6 +9,7 @@ import NutritionFacts from "../components/NutritionFacts";
 import SourcesList from "../components/SourcesList";
 import DataQualityBanner from "../components/DataQualityBanner";
 import Tumbleweed from "../components/Tumbleweed";
+import OrnamentalCard from "../components/OrnamentalCard";
 
 export default function ScannerPage() {
   const fileInputRef = useRef(null);
@@ -113,41 +114,41 @@ export default function ScannerPage() {
         <DataQualityBanner dataQuality={dataQuality} />
 
         {/* Breakdown */}
-        <div className="p-5 rounded-2xl bg-white shadow-sm">
+        <OrnamentalCard>
           <BreakdownChart breakdown={breakdown} reasons={breakdownReasons} />
-        </div>
+        </OrnamentalCard>
 
         {/* Ingredients */}
-        <div className="p-5 rounded-2xl bg-white shadow-sm">
+        <OrnamentalCard>
           <IngredientList ingredients={ingredientResults} />
-        </div>
+        </OrnamentalCard>
 
         {/* Nutrition Facts */}
         {nutritionFacts && (
-          <div className="p-5 rounded-2xl bg-white shadow-sm">
+          <OrnamentalCard>
             <NutritionFacts nutrition={nutritionFacts} source={nutritionSource} />
-          </div>
+          </OrnamentalCard>
         )}
 
         {/* Brand profile */}
-        <div className="p-5 rounded-2xl bg-white shadow-sm">
+        <OrnamentalCard>
           <BrandProfile profile={brandProfile} brand={product?.brand} />
-        </div>
+        </OrnamentalCard>
 
         {/* Alternatives */}
-        <div className="p-5 rounded-2xl bg-white shadow-sm">
+        <OrnamentalCard>
           <AlternativesList alternatives={alternatives} currentScore={score} />
-        </div>
+        </OrnamentalCard>
 
-        {/* Sources */}
-        <div className="p-5 rounded-2xl bg-white shadow-sm">
+        {/* Evidence */}
+        <OrnamentalCard>
           <SourcesList
             groundingSources={groundingSources}
             brandProfile={brandProfile}
             ingredientResults={ingredientResults}
             alternatives={alternatives}
           />
-        </div>
+        </OrnamentalCard>
       </div>
     );
   }
@@ -156,7 +157,10 @@ export default function ScannerPage() {
   return (
     <div className="max-w-lg mx-auto px-4 py-6 pb-24 flex flex-col items-center gap-6">
       <div className="text-center space-y-2">
-        <h1 className="font-display text-3xl font-bold text-green-900">Origin Trail</h1>
+        <div className="relative inline-flex items-center justify-center px-8 py-3">
+          <img src="/saloonsign.png" alt="" className="absolute inset-0 w-full h-full object-fill" />
+          <h1 className="relative font-display text-3xl font-bold text-white drop-shadow-md mt-4">Origin Trail</h1>
+        </div>
         <p className="text-green-600">Draw your product — get the full bounty report</p>
         <div className="mt-3 p-4 rounded-xl bg-cream-100 border border-cream-300 text-left space-y-2 text-sm text-green-800">
           <p className="font-semibold text-green-900">How it works</p>

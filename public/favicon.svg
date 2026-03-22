@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32">
+  <!-- 8-pointed sheriff star -->
+  <polygon
+    points="16,2 18.4,11.2 27,8.6 20.8,15.6 28,20 19,19.6 18.4,29 16,20.8 13.6,29 13,19.6 4,20 11.2,15.6 5,8.6 13.6,11.2"
+    fill="#BA8A00"
+    stroke="#6B4A00"
+    stroke-width="1"
+    stroke-linejoin="round"
+  />
+  <!-- Center circle -->
+  <circle cx="16" cy="16" r="4.5" fill="#F8E4B0" stroke="#856000" stroke-width="1" />
+  <!-- OT initials -->
+  <text x="16" y="18.5" text-anchor="middle" font-size="4.5" font-family="serif" font-weight="bold" fill="#6B4A00">OT</text>
+</svg>

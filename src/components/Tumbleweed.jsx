@@ -44,10 +44,9 @@ export default function Tumbleweed({ status }) {
       {/* Tumbleweed image */}
       <div className="relative w-24 h-24">
         <img
-          src="/tumbleweed.png"
+          src="/transperentTumbleweed.gif"
           alt="tumbleweed"
-          className="w-24 h-24 object-contain animate-spin"
-          style={{ animationDuration: "1.8s", animationTimingFunction: "linear" }}
+          className="w-24 h-24 object-contain"
         />
         {/* Dust shadow beneath */}
         <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-14 h-2 bg-green-950/20 rounded-full blur-sm" />
