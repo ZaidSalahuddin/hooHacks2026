@@ -72,7 +72,7 @@ export const useScanStore = create((set) => ({
     try {
       // Step 1: Extract product info from image
       const product = await analyzeProductImage(imageBase64, mimeType);
-      console.log("[EcoScan] Vision API response:", JSON.stringify(product, null, 2));
+      console.log("[OriginTrail] Vision API response:", JSON.stringify(product, null, 2));
       let nutritionFacts = product.nutrition_facts || null;
       set({ product, nutritionFacts, status: "analyzing" });
 
@@ -117,7 +117,7 @@ export const useScanStore = create((set) => ({
         const offProduct = await lookupProduct(product.product_name, product.brand);
 
         if (offProduct) {
-          console.log("[EcoScan] Open Food Facts match found:", offProduct.product_name, offProduct.brands);
+          console.log("[OriginTrail] Open Food Facts match found:", offProduct.product_name, offProduct.brands);
 
           // Validate nutrition
           const nutritionResult = validateNutrition(nutritionFacts, offProduct);
@@ -131,11 +131,11 @@ export const useScanStore = create((set) => ({
 
           set({ nutritionFacts, nutritionSource });
         } else {
-          console.log("[EcoScan] No Open Food Facts match — using Gemini data as-is");
+          console.log("[OriginTrail] No Open Food Facts match — using Gemini data as-is");
         }
 
         if (allWarnings.length > 0) {
-          console.log("[EcoScan] Validation warnings:", allWarnings);
+          console.log("[OriginTrail] Validation warnings:", allWarnings);
         }
         set({ validationWarnings: allWarnings });
 
@@ -195,7 +195,7 @@ export const useScanStore = create((set) => ({
 
         // Step 6: Assess data quality
         const dataQuality = assessDataQuality(ingredientResults, brandProfile);
-        console.log("[EcoScan] Data quality:", dataQuality);
+        console.log("[OriginTrail] Data quality:", dataQuality);
 
         // Step 7: Find targeted alternatives now that we have score + breakdown
         const rawAlternatives = await findAlternatives(

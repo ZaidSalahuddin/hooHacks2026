@@ -59,13 +59,13 @@ export async function getCachedProduct(productName, brand) {
     const key = productKey(productName, brand);
     const snap = await getDoc(doc(db, COLLECTION, key));
     if (snap.exists()) {
-      console.log("[EcoScan] Cache hit:", key);
+      console.log("[OriginTrail] Cache hit:", key);
       return snap.data();
     }
-    console.log("[EcoScan] Cache miss:", key);
+    console.log("[OriginTrail] Cache miss:", key);
     return null;
   } catch (err) {
-    console.warn("[EcoScan] Cache lookup failed, proceeding with fresh scan:", err.message);
+    console.warn("[OriginTrail] Cache lookup failed, proceeding with fresh scan:", err.message);
     return null;
   }
 }
@@ -82,8 +82,8 @@ export async function cacheProduct(productName, brand, scanData) {
       brand,
       cached_at: serverTimestamp(),
     });
-    console.log("[EcoScan] Cached product:", key);
+    console.log("[OriginTrail] Cached product:", key);
   } catch (err) {
-    console.warn("[EcoScan] Failed to cache product:", err.message);
+    console.warn("[OriginTrail] Failed to cache product:", err.message);
   }
 }

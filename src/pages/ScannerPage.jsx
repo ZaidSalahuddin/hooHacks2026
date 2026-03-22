@@ -156,7 +156,7 @@ export default function ScannerPage() {
   return (
     <div className="max-w-lg mx-auto px-4 py-6 pb-24 flex flex-col items-center gap-6">
       <div className="text-center space-y-2">
-        <h1 className="font-display text-3xl font-bold text-green-900">Sustainability Sheriff</h1>
+        <h1 className="font-display text-3xl font-bold text-green-900">Origin Trail</h1>
         <p className="text-green-600">Draw your product — get the full bounty report</p>
         <div className="mt-3 p-4 rounded-xl bg-cream-100 border border-cream-300 text-left space-y-2 text-sm text-green-800">
           <p className="font-semibold text-green-900">How it works</p>

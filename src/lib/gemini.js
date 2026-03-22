@@ -234,7 +234,7 @@ Include ALL ingredients listed above in the ingredients array.`;
 
   // Extract grounding sources from Gemini's search metadata
   const groundingSources = extractGroundingSources(result.response);
-  console.log("[EcoScan] Grounding sources:", groundingSources);
+  console.log("[OriginTrail] Grounding sources:", groundingSources);
   parsed._groundingSources = groundingSources;
 
   return parsed;

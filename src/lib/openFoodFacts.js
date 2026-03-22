@@ -40,7 +40,7 @@ export async function lookupProduct(productName, brand) {
 
     return match;
   } catch (err) {
-    console.warn("[EcoScan] Open Food Facts lookup failed:", err.message);
+    console.warn("[OriginTrail] Open Food Facts lookup failed:", err.message);
     return null;
   }
 }
