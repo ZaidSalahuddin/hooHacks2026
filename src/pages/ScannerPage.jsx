@@ -8,6 +8,7 @@ import AlternativesList from "../components/AlternativesList";
 import NutritionFacts from "../components/NutritionFacts";
 import SourcesList from "../components/SourcesList";
 import DataQualityBanner from "../components/DataQualityBanner";
+import Tumbleweed from "../components/Tumbleweed";
 
 export default function ScannerPage() {
   const fileInputRef = useRef(null);
@@ -200,11 +201,8 @@ export default function ScannerPage() {
 
         {/* Scanning overlay */}
         {(status === "scanning" || status === "analyzing") && (
-          <div className="absolute inset-0 bg-green-950/60 flex flex-col items-center justify-center text-white">
-            <div className="w-10 h-10 border-4 border-white/30 border-t-white rounded-full animate-spin mb-3" />
-            <p className="font-medium">
-              {status === "scanning" ? "Tracking down the product..." : "Reading the trail..."}
-            </p>
+          <div className="absolute inset-0 bg-green-950/70 flex flex-col items-center justify-center">
+            <Tumbleweed status={status} />
           </div>
         )}
       </div>

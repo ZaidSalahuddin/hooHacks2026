@@ -56,7 +56,7 @@ export default function HistoryPage() {
         <div className="relative mb-4">
           <input
             type="text"
-            placeholder="Search scans..."
+            placeholder="Search records..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             className="w-full py-2.5 px-4 pl-10 rounded-xl bg-cream-100 border border-cream-200 focus:outline-none focus:border-green-400 text-sm"

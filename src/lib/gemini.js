@@ -63,7 +63,8 @@ export async function analyzeProductImage(imageBase64, mimeType = "image/jpeg") 
   const prompt = `You are a product label analysis assistant. Carefully examine every part of this product image.
 
 STEP 1: Is there a recognizable consumer product in the image?
-If NO, respond ONLY with: { "product_found": false }
+If NO, respond ONLY with: { "product_found": false, "detected_type": "person" | "animal" | "scenery" | "other" }
+Choose the detected_type that best describes what IS in the image.
 
 STEP 2: If YES, extract ALL of the following. Look very carefully at the label text.
 
@@ -130,7 +131,13 @@ CRITICAL RULES:
   const parsed = extractJSON(result.response.text());
 
   if (!parsed.product_found) {
-    throw new Error("No product detected in the image. Please take a photo of a consumer product (food, drink, cosmetic, etc.) and try again.");
+    const messages = {
+      person: "Whoa there, partner! The Sheriff bounties products, not outlaws. Point that camera at a label and try again.",
+      animal: "That critter's got spirit, but the Sheriff only files reports on consumer products. Try scanning a label instead.",
+      scenery: "Fine landscape, but the Sheriff ain't in the tourism business. Point that camera at a product label.",
+      other: "The Sheriff couldn't find a product worth bounty-ing here. Try a clearer shot of a product label.",
+    };
+    throw new Error(messages[parsed.detected_type] || messages.other);
   }
 
   return parsed;

@@ -58,16 +58,9 @@ body {
   margin: 0;
   font-family: var(--font-body);
   background-color: var(--color-cream-50);
-  /* Desert sky → dusty horizon gradient */
-  background-image:
-    linear-gradient(
-      to bottom,
-      #c8b99a 0%,
-      #dfd0b0 18%,
-      #ede3c8 35%,
-      #f5edd8 55%,
-      #faf4e8 100%
-    );
+  background-image: url('/background.jpg');
+  background-size: cover;
+  background-position: center;
   background-attachment: fixed;
   color: var(--color-green-950);
   min-height: 100vh;
