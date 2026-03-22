@@ -114,7 +114,7 @@ export default function HistoryPage() {
             <div
               key={scan.id}
               onClick={() => handleOpen(scan.id)}
-              className="flex items-center gap-4 p-4 rounded-2xl bg-white shadow-sm cursor-pointer hover:bg-cream-50 transition-colors"
+              className="flex items-center gap-4 p-4 rounded-2xl bg-cream-50/80 shadow-sm cursor-pointer hover:bg-cream-100/90 transition-colors"
             >
               <div
                 className={`w-12 h-12 rounded-full flex items-center justify-center font-display font-bold text-lg ${styles.bg} ${styles.text}`}

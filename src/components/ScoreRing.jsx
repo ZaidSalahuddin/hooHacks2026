@@ -29,18 +29,7 @@ export default function ScoreRing({ score, size = 160 }) {
     return () => cancelAnimationFrame(frame);
   }, [score]);
 
-  // 8-pointed sheriff star behind the ring
-  const starOuter = size / 2 + 2;
-  const starInner = size / 2 - strokeWidth - 4;
-  const cx = size / 2;
-  const cy = size / 2;
-  const starPoints = Array.from({ length: 16 }, (_, i) => {
-    const angle = (i * Math.PI) / 8 - Math.PI / 2;
-    const r = i % 2 === 0 ? starOuter : starInner;
-    return `${cx + r * Math.cos(angle) + 4},${cy + r * Math.sin(angle) + 4}`;
-  }).join(" ");
-
-  const filledStars = Math.round(score / 20); // 0–5 stars based on score
+const filledStars = Math.round(score / 20); // 0–5 stars based on score
 
   return (
     <div className="flex flex-col items-center gap-3">
@@ -68,9 +57,12 @@ export default function ScoreRing({ score, size = 160 }) {
           />
         </svg>
         {/* Sheriff star rendered on top of the ring */}
-        <svg width={size + 8} height={size + 8} className="absolute pointer-events-none" style={{ top: -4, left: -4 }}>
-          <polygon points={starPoints} className="fill-gold-200/40 stroke-gold-400" strokeWidth={1.5} />
-        </svg>
+        <img
+          src="/sheriffStar.png"
+          alt=""
+          className="absolute pointer-events-none"
+          style={{ width: size + 8, height: size + 8, top: -4, left: -4, objectFit: "contain" }}
+        />
         <div className="absolute flex flex-col items-center">
           <span className="font-display text-4xl font-bold">{animatedScore}</span>
           <span className={`text-sm font-semibold ${styles.text}`}>{tier.label}</span>

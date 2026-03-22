@@ -57,7 +57,7 @@
 body {
   margin: 0;
   font-family: var(--font-body);
-  background-color: var(--color-cream-50);
+  background-color: #c8a97a;
   background-image: url('/background.png');
   background-size: cover;
   background-position: center;

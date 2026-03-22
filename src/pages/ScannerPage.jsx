@@ -10,6 +10,7 @@ import SourcesList from "../components/SourcesList";
 import DataQualityBanner from "../components/DataQualityBanner";
 import Tumbleweed from "../components/Tumbleweed";
 import OrnamentalCard from "../components/OrnamentalCard";
+import SaloonTitle from "../components/SaloonTitle";
 
 export default function ScannerPage() {
   const fileInputRef = useRef(null);
@@ -99,10 +100,8 @@ export default function ScannerPage() {
 
         {/* Product header */}
         <div className="text-center">
-          <h2 className="font-display text-2xl font-bold text-green-900">
-            {product?.product_name}
-          </h2>
-          <p className="text-green-600">{product?.brand}</p>
+          <SaloonTitle text={product?.product_name} className="text-2xl" />
+          <p className="text-green-600 mt-1">{product?.brand}</p>
         </div>
 
         {/* Score ring */}
@@ -114,7 +113,7 @@ export default function ScannerPage() {
         <DataQualityBanner dataQuality={dataQuality} />
 
         {/* Breakdown */}
-        <OrnamentalCard>
+        <OrnamentalCard showCenterTop>
           <BreakdownChart breakdown={breakdown} reasons={breakdownReasons} />
         </OrnamentalCard>
 
@@ -157,10 +156,7 @@ export default function ScannerPage() {
   return (
     <div className="max-w-lg mx-auto px-4 py-6 pb-24 flex flex-col items-center gap-6">
       <div className="text-center space-y-2">
-        <div className="relative inline-flex items-center justify-center px-8 py-3">
-          <img src="/saloonsign.png" alt="" className="absolute inset-0 w-full h-full object-fill" />
-          <h1 className="relative font-display text-3xl font-bold text-white drop-shadow-md mt-4">Origin Trail</h1>
-        </div>
+        <SaloonTitle text="Origin Trail" className="text-3xl" />
         <p className="text-green-600">Draw your product — get the full bounty report</p>
         <div className="mt-3 p-4 rounded-xl bg-cream-100 border border-cream-300 text-left space-y-2 text-sm text-green-800">
           <p className="font-semibold text-green-900">How it works</p>
@@ -258,7 +254,7 @@ export default function ScannerPage() {
 
       {/* Extracted product info while analyzing */}
       {product && status === "analyzing" && (
-        <div className="w-full p-4 rounded-xl bg-white shadow-sm text-center">
+        <div className="w-full p-4 rounded-xl bg-cream-100/80 shadow-sm text-center">
           <p className="font-semibold text-green-900">{product.product_name}</p>
           <p className="text-sm text-green-600">{product.brand}</p>
           <p className="text-xs text-green-400 mt-1">

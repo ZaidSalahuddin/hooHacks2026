@@ -46,13 +46,20 @@ function Corner({ className }) {
   );
 }
 
-export default function OrnamentalCard({ children, className = "" }) {
+export default function OrnamentalCard({ children, className = "", showCenterTop = false }) {
   return (
-    <div className={`relative p-5 rounded-xl bg-cream-50/85 border border-gold-300/60 shadow-sm ${className}`}>
+    <div className={`relative p-5 rounded-md bg-cream-50/85 border border-gold-300/60 shadow-sm ${className}`}>
       <Corner className="top-0 left-0" />
       <Corner className="top-0 right-0 -scale-x-100" />
       <Corner className="bottom-0 left-0 -scale-y-100" />
       <Corner className="bottom-0 right-0 scale-x-[-1] scale-y-[-1]" />
+      {showCenterTop && (
+        <img
+          src="/centerTop.png"
+          alt=""
+          className="absolute left-1/2 -translate-x-1/2 top-0 h-8 w-auto pointer-events-none"
+        />
+      )}
       {children}
     </div>
   );
