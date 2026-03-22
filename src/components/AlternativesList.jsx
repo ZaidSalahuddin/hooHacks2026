@@ -7,7 +7,7 @@ export default function AlternativesList({ alternatives, currentScore }) {
     <div className="space-y-3">
       <h3 className="font-display text-lg text-green-900">Greener Pastures</h3>
       <div className="space-y-2">
-        {alternatives.map((alt, i) => {
+        {[...alternatives].sort((a, b) => b.score - a.score).map((alt, i) => {
           const styles = getTierStyles(alt.score);
           const tier = getScoreTier(alt.score);
           return (
