@@ -1,4 +1,4 @@
-# EcoScan — Sustainability Sheriff
+# Sustainability Sheriff
 
 An AI-powered sustainability scanner that lets you photograph any consumer product and receive a detailed bounty score (0-100) based on ingredient safety, environmental impact, brand ethics, health impact, and packaging.
 
